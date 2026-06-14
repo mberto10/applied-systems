@@ -12,7 +12,6 @@ Planned contents:
 
 - `dynamic-workflows/` - contract references and workflow-shape notes for dynamic workflows.
 - `examples/eval-contracts/` - concrete eval-contract examples referenced by the essay.
-- `agentic-optimization-loop/` - the worked example for turning an eval contract into an optimization loop.
 
 ## Status
 
