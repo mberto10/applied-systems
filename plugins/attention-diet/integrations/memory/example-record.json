@@ -1,0 +1,19 @@
+{
+  "schema_version": "attention-summary/1.0",
+  "version_id": "example-run-002",
+  "previous_version": "example-run-001",
+  "contract_id": "example-diet",
+  "contract_revision": 3,
+  "account_key": "synthetic-account",
+  "created_at": "2026-09-17T15:00:00Z",
+  "items": [
+    {
+      "service": "private-source",
+      "identifier": "example-conversation-7",
+      "change_fingerprint": "sha256:synthetic-example",
+      "fingerprint_method": "sender-text/v1"
+    }
+  ],
+  "coverage": "Messages partial; requests checked; notifications checked.",
+  "summary": "A contact proposed a meeting time in an existing conversation. Synthetic example only."
+}

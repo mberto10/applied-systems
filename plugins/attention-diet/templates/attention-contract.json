@@ -1,0 +1,103 @@
+{
+  "schema_version": "attention-diet-contract/1.3",
+  "id": "my-attention",
+  "revision": 1,
+  "intent": {
+    "purpose": "Receive a concise selection from the sources I choose.",
+    "success": "A short overview of substantive items relevant to my confirmed interests.",
+    "interests": [
+      {
+        "id": "chosen-topic",
+        "focus": "Replace with an interest confirmed by the user."
+      }
+    ],
+    "excluded": [
+      "promotional_content",
+      "outbound_account_actions"
+    ]
+  },
+  "coverage_threads": [
+    {
+      "id": "source-1",
+      "service": "example-source",
+      "content": "private_communication",
+      "access": {
+        "type": "browser",
+        "provider": "host_default",
+        "session": "isolated",
+        "external_session_reuse": false,
+        "fallback": "none"
+      },
+      "account_actions": "none",
+      "surfaces": [
+        "items"
+      ],
+      "excluded_surfaces": [],
+      "entry_urls": {
+        "items": "https://example.org/items"
+      },
+      "procedure": {
+        "navigation": "Replace with instructions for reaching the chosen source and surfaces using observed navigation.",
+        "account_identity": "Establish the signed-in identity from account UI and use a stable account key scoped to this service.",
+        "read_state": "Inspect previews unless opening an item is known to preserve its read state. Describe any source-specific acknowledgement effects before use.",
+        "item_identity": "Use observed stable item IDs or canonical links and the original inspected text with the shared fingerprint helper.",
+        "pagination": "Use observed next-page or load-more controls. Describe how this source signals exhaustion; treat ordering as unknown until verified."
+      },
+      "collection": {
+        "items": {
+          "mode": "scan"
+        }
+      },
+      "selection": {
+        "include": "Items that meet the user’s confirmed interests or explicitly requested categories. Give a concrete reason for inclusion.",
+        "exclude": [],
+        "uncertain_relevance": "Omit weak matches; do not fill the allowance.",
+        "evidence": "Summarize only inspected content, label truncated previews and distinguish source claims from verified facts."
+      },
+      "on_access_failure": "Report the unavailable surface; do not fall back to another browser or access route."
+    }
+  ],
+  "memory_context": {
+    "provider": "local",
+    "directory": "~/.local/state/attention-diet/my-attention",
+    "purpose": "avoid_repeating_previously_briefed_items",
+    "on_unavailable": "continue_with_notice"
+  },
+  "run_limits": {
+    "elapsed_minutes": 10,
+    "items_per_surface": 30,
+    "service_minutes": {
+      "example-source": 10
+    }
+  },
+  "composition": {
+    "interface": "agent_summary",
+    "delivery": "current_agent_conversation",
+    "template": "./interfaces/agent-summary/template.md",
+    "template_path_base": "plugin_root",
+    "format": "markdown",
+    "sections": [
+      "overview",
+      "updates"
+    ],
+    "target_reading_minutes": 2,
+    "max_items_by_thread": {
+      "source-1": 5
+    }
+  },
+  "execution": {
+    "mode": "one_off_on_invocation",
+    "schedule_enabled": false,
+    "daily_time": null
+  },
+  "serendipity": {
+    "enabled": false,
+    "max_items": 1,
+    "sources": [],
+    "share_of_discovery_sample": 0.2,
+    "test": [
+      "Substantive, clearly outside the listed interests, with a concrete reason to deserve attention."
+    ],
+    "avoid_repeating_topics_for_runs": 5
+  }
+}

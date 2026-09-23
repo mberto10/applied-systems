@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+<title>$title</title>
+<style>
+:root{--bg:#f7f6f2;--ink:#24312a;--muted:#5b6a61;--line:#d9dfd9;--card:#fff;--link:#225d48;--accent:#aa7409}
+@media (prefers-color-scheme:dark){:root{--bg:#151a17;--ink:#e6ebe7;--muted:#9aa89f;--line:#2c3630;--card:#1c2320;--link:#7fc9a9;--accent:#e0a93a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 system-ui,sans-serif}
+main{margin:auto;padding:40px 16px 56px}
+h1{font-size:1.7em;line-height:1.2;margin:0 0 .4em}
+.meta{color:var(--muted);font-size:.85em;letter-spacing:.02em;margin:0 0 1.6em}
+.overview{font-size:1.05em;margin:0}
+h2{font-size:.8em;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2.6em 0 .8em}
+h3{margin:0;font-size:1.05em;line-height:1.35}
+article p{margin:.45em 0 0}
+.why,.caveat,.source{font-size:.9em;color:var(--muted)}
+.caveat::before{content:"Note: ";font-weight:600}
+.source span::before{content:"· "}
+a{color:var(--link)}
+a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+footer{border-top:1px solid var(--line);margin-top:3em;padding-top:1em;font-size:.85em;color:var(--muted)}
+footer p{margin:.5em 0}
+
+/* Briefing: a dense list to triage top to bottom. */
+.briefing main{max-width:680px}
+.briefing article{padding:14px 0;border-top:1px solid var(--line)}
+.briefing .entries article:last-child{border-bottom:1px solid var(--line)}
+
+/* Discovery: a card grid for choosing what to read in full. */
+.discovery main{max-width:1080px}
+.discovery .entries{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.discovery article{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px}
+.discovery h3{font:600 1.25em/1.3 Georgia,"Times New Roman",serif}
+.discovery .why{border-left:3px solid var(--accent);padding-left:12px;margin-top:1em;color:var(--ink)}
+.discovery .source{margin-top:auto;padding-top:1.2em}
+</style></head>
+<body class="$layout"><main>
+<h1>$title</h1>
+<p class="meta">$meta</p>
+<p class="overview">$overview</p>
+$content
+<footer>$notices<p class="hint">To change what reaches you, ask Attention Diet to tune your contract, for example: “fewer posts like this”.</p></footer>
+</main></body></html>

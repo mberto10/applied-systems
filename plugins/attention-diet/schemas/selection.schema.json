@@ -1,0 +1,336 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Attention Diet selected content",
+  "description": "Only entries selected for this briefing. scripts/briefing.py also checks contract scope, coverage, item identity and ceilings.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "enum": [
+        "attention-selection/1.1",
+        "attention-selection/1.2"
+      ]
+    },
+    "contract_id": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "contract_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,100}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "title": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "overview": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "surface": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "status": {
+            "enum": [
+              "checked",
+              "partial",
+              "unavailable",
+              "not_checked"
+            ]
+          },
+          "inspected_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "more_available": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "stop_reason": {
+            "enum": [
+              "exhausted_results",
+              "novelty_boundary",
+              "time_ceiling",
+              "item_ceiling",
+              "sample_ceiling",
+              "source_limit",
+              "access_failure",
+              "agent_stopped_early",
+              "not_checked",
+              "retrieval_stalled",
+              "window_overrun"
+            ]
+          },
+          "evidence": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "read_state_effect": {
+            "enum": [
+              "unknown",
+              "not_assessed",
+              "unchanged"
+            ]
+          },
+          "notices": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "\\S"
+            }
+          },
+          "overrun_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "within_allowance_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unreadable_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "has_unreadable_content": {
+            "type": "boolean"
+          },
+          "boundary": {
+            "enum": [
+              "exhausted_results",
+              "verified_prior_range",
+              "unknown"
+            ]
+          },
+          "exhaustion": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "explicit_end_marker",
+                  "authoritative_total_matched",
+                  "documented_connector_end"
+                ]
+              },
+              "evidence": {
+                "type": "string",
+                "pattern": "\\S"
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "kind",
+              "evidence"
+            ]
+          }
+        },
+        "required": [
+          "thread_id",
+          "surface",
+          "status",
+          "inspected_count",
+          "more_available",
+          "stop_reason",
+          "evidence"
+        ]
+      }
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "thread_id": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "surface": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "section": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "title": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "summary": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "why": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "caveats": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "\\S"
+            }
+          },
+          "account_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "\\S"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "Observed direct source link, or null when the integration provides none."
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "memory-record.schema.json#/$defs/itemVersion",
+              "unevaluatedProperties": false
+            }
+          },
+          "slot": {
+            "const": "serendipity"
+          },
+          "topic": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "pattern": "\\S"
+          }
+        },
+        "required": [
+          "id",
+          "thread_id",
+          "surface",
+          "section",
+          "title",
+          "summary",
+          "why",
+          "account_key",
+          "url",
+          "items"
+        ],
+        "dependentRequired": {
+          "slot": [
+            "topic"
+          ],
+          "topic": [
+            "slot"
+          ]
+        }
+      }
+    },
+    "notices": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\S"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "contract_id",
+    "contract_revision",
+    "run_id",
+    "created_at",
+    "title",
+    "overview",
+    "coverage",
+    "entries",
+    "notices"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "attention-selection/1.1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "coverage": {
+            "items": {
+              "properties": {
+                "boundary": false,
+                "exhaustion": false,
+                "overrun_count": false,
+                "within_allowance_count": false,
+                "unreadable_count": false,
+                "has_unreadable_content": false,
+                "stop_reason": {
+                  "not": {
+                    "enum": [
+                      "retrieval_stalled",
+                      "window_overrun"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "coverage": {
+            "items": {
+              "required": [
+                "boundary",
+                "exhaustion",
+                "overrun_count",
+                "within_allowance_count",
+                "unreadable_count",
+                "has_unreadable_content"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

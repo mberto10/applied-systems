@@ -1,0 +1,44 @@
+{
+  "schema_version": "attention-selection/1.1",
+  "contract_id": "my-attention",
+  "contract_revision": 1,
+  "run_id": "example-001",
+  "created_at": "2026-09-18T08:00:00Z",
+  "title": "Attention overview",
+  "overview": "One relevant item from the configured source.",
+  "coverage": [
+    {
+      "thread_id": "source-1",
+      "surface": "items",
+      "status": "partial",
+      "inspected_count": 30,
+      "more_available": true,
+      "stop_reason": "item_ceiling",
+      "evidence": "The configured thirty-item inspection ceiling was reached; more results remain."
+    }
+  ],
+  "entries": [
+    {
+      "id": "item-1",
+      "thread_id": "source-1",
+      "surface": "items",
+      "section": "updates",
+      "account_key": "example-source:account",
+      "title": "A practical method",
+      "summary": "A fictional discussion describes a repeatable method and its limitations.",
+      "why": "It addresses a topic specified in the contract.",
+      "url": "https://example.org/items/1",
+      "items": [
+        {
+          "service": "example-source",
+          "identifier": "item-1",
+          "change_fingerprint": "sha256:example",
+          "fingerprint_method": "sender-text/v1"
+        }
+      ]
+    }
+  ],
+  "notices": [
+    "Illustrative content with placeholder links."
+  ]
+}

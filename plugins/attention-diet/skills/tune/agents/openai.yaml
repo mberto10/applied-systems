@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tune Attention Diet"
+  short_description: "Apply a requested lasting correction to your contract"
+  default_prompt: "Use $tune: show me less generic product promotion from official accounts."

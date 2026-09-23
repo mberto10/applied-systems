@@ -1,0 +1,95 @@
+<!doctype html>
+<!-- Example of a view built from $$data: one item at a time, with the arrow keys. Copy it beside a
+     contract and change it freely. Avoid "$$" followed by a letter or brace in scripts and styles: the
+     renderer reads it as a placeholder, so do not use JavaScript template literals with substitutions. -->
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>$title</title>
+<style>
+:root{--bg:#f7f6f2;--ink:#24312a;--muted:#5b6a61;--line:#d9dfd9;--card:#fff;--link:#225d48;--accent:#aa7409}
+@media (prefers-color-scheme:dark){:root{--bg:#151a17;--ink:#e6ebe7;--muted:#9aa89f;--line:#2c3630;--card:#1c2320;--link:#7fc9a9;--accent:#e0a93a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.6 system-ui,sans-serif}
+main{max-width:640px;margin:auto;padding:32px 16px 48px;min-height:100vh;display:flex;flex-direction:column}
+header{display:flex;justify-content:space-between;gap:16px;align-items:baseline;color:var(--muted);font-size:.8em}
+header strong{color:var(--ink);font-weight:600}
+article{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:28px;margin:24px 0}
+.section{font-size:.75em;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 .6em}
+h1{font:600 1.5em/1.25 Georgia,"Times New Roman",serif;margin:0 0 .6em}
+article p{margin:.7em 0 0}
+.why{border-left:3px solid var(--accent);padding-left:12px}
+.caveat,.source{font-size:.85em;color:var(--muted)}
+a{color:var(--link)}
+nav{display:flex;justify-content:space-between;align-items:center;gap:12px}
+button{font:inherit;font-size:.9em;padding:8px 16px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+#position{color:var(--muted);font-size:.85em}
+footer{margin-top:auto;padding-top:32px;font-size:.8em;color:var(--muted)}
+footer p{margin:.4em 0}
+</style></head>
+<body><main>
+<header><strong id="title"></strong><span id="meta"></span></header>
+<article>
+  <p class="section" id="section"></p>
+  <h1 id="item"></h1>
+  <p id="summary"></p>
+  <p class="why" id="why"></p>
+  <div id="caveats"></div>
+  <p class="source"><a id="link" rel="noreferrer">Open source</a> <span id="source"></span></p>
+</article>
+<nav><button id="previous" type="button">Previous</button><span id="position"></span><button id="next" type="button">Next</button></nav>
+<footer>$notices</footer>
+</main>
+<script type="application/json" id="attention-data">$data</script>
+<script>
+(function () {
+  var data = JSON.parse(document.getElementById('attention-data').textContent);
+  var items = [];
+  data.sections.forEach(function (section) {
+    section.entries.forEach(function (entry) { items.push({section: section.name, entry: entry}); });
+  });
+  var index = 0;
+  function byId(id) { return document.getElementById(id); }
+  // Every value is text from the web: it goes in through textContent, never as markup.
+  function text(id, value) { byId(id).textContent = value || ''; byId(id).hidden = !value; }
+  function show() {
+    text('title', data.title);
+    text('meta', data.meta);
+    var current = items[index];
+    var entry = current ? current.entry : {title: data.overview, caveats: []};
+    text('section', current && current.section);
+    text('item', entry.title);
+    text('summary', entry.summary);
+    text('why', entry.why);
+    text('source', entry.source);
+    var caveats = byId('caveats');
+    caveats.textContent = '';
+    entry.caveats.forEach(function (caveat) {
+      var line = document.createElement('p');
+      line.className = 'caveat';
+      line.textContent = 'Note: ' + caveat;
+      caveats.appendChild(line);
+    });
+    var link = byId('link');
+    var safe = typeof entry.url === 'string' && /^https?:\/\//.test(entry.url);
+    link.hidden = !safe;
+    if (safe) { link.setAttribute('href', entry.url); } else { link.removeAttribute('href'); }
+    text('position', items.length ? (index + 1) + ' of ' + items.length : '');
+    byId('previous').disabled = index <= 0;
+    byId('next').disabled = index >= items.length - 1;
+  }
+  function move(step) {
+    index = Math.max(0, Math.min(items.length - 1, index + step));
+    show();
+  }
+  byId('previous').addEventListener('click', function () { move(-1); });
+  byId('next').addEventListener('click', function () { move(1); });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'ArrowLeft') { move(-1); }
+    if (event.key === 'ArrowRight') { move(1); }
+  });
+  show();
+})();
+</script>
+</body></html>

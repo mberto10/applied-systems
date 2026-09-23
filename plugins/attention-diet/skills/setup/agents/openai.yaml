@@ -1,0 +1,4 @@
+interface:
+  display_name: "Set Up Attention Diet"
+  short_description: "Create your attention contract through a short interview"
+  default_prompt: "Use $setup to create my attention contract."

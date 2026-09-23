@@ -1,0 +1,110 @@
+{
+  "schema_version": "attention-diet-contract/1.3",
+  "id": "my-attention",
+  "revision": 1,
+  "intent": {
+    "purpose": "Catch up on substantive posts about AI tools without browsing the feed.",
+    "success": "A two-minute overview of new, substantive items; nothing if nothing qualifies.",
+    "interests": [
+      {
+        "id": "agent-evaluation",
+        "focus": "Methods and results for evaluating AI agents."
+      },
+      {
+        "id": "agent-tooling",
+        "focus": "Practical tools and plugins for coding agents, with concrete examples."
+      }
+    ],
+    "excluded": [
+      "Routine product promotion.",
+      "Job advertisements.",
+      "outbound_account_actions"
+    ]
+  },
+  "coverage_threads": [
+    {
+      "id": "community-latest",
+      "service": "example-community",
+      "content": "public_posts",
+      "access": {
+        "type": "browser",
+        "provider": "host_default",
+        "session": "isolated",
+        "external_session_reuse": false,
+        "fallback": "none"
+      },
+      "account_actions": "none",
+      "surfaces": [
+        "latest"
+      ],
+      "excluded_surfaces": [],
+      "entry_urls": {
+        "latest": "https://community.example.org/latest"
+      },
+      "procedure": {
+        "navigation": "Open the entry URL and read the 'Latest' list from the top. Use the visible 'More' control for further items.",
+        "account_identity": "Establish the signed-in identity from account UI and use a stable account key scoped to this service.",
+        "read_state": "Inspect previews unless opening an item is known to preserve its read state. Describe any source-specific acknowledgement effects before use.",
+        "item_identity": "Use each post's canonical link as its ID; one post counts as one item. Fingerprint the author name and the visible title plus excerpt.",
+        "pagination": "The list is newest first. A 'More' control loads older posts; the list has no end marker."
+      },
+      "collection": {
+        "latest": {
+          "mode": "scan"
+        }
+      },
+      "selection": {
+        "include": "Posts with a concrete method, result or tool that matches a listed interest. Give the reason for inclusion.",
+        "exclude": [
+          "Announcements without a concrete example."
+        ],
+        "uncertain_relevance": "Omit weak matches; do not fill the allowance.",
+        "evidence": "Summarize only inspected content, label truncated previews and distinguish source claims from verified facts."
+      },
+      "on_access_failure": "Report the unavailable surface; do not fall back to another browser or access route."
+    }
+  ],
+  "memory_context": {
+    "provider": "local",
+    "directory": "~/.local/state/attention-diet/my-attention",
+    "purpose": "avoid_repeating_previously_briefed_items",
+    "on_unavailable": "continue_with_notice"
+  },
+  "run_limits": {
+    "elapsed_minutes": 10,
+    "items_per_surface": 30,
+    "service_minutes": {
+      "example-community": 10
+    }
+  },
+  "composition": {
+    "interface": "agent_summary",
+    "delivery": "current_agent_conversation",
+    "template": "./interfaces/agent-summary/template.md",
+    "template_path_base": "plugin_root",
+    "format": "markdown",
+    "sections": [
+      "overview",
+      "updates"
+    ],
+    "target_reading_minutes": 2,
+    "max_items_by_thread": {
+      "community-latest": 5
+    }
+  },
+  "execution": {
+    "mode": "one_off_on_invocation",
+    "schedule_enabled": false,
+    "daily_time": null
+  },
+  "serendipity": {
+    "enabled": false,
+    "max_items": 1,
+    "sources": [],
+    "share_of_discovery_sample": 0.2,
+    "test": [
+      "Substantive, clearly outside the listed interests, with a concrete reason to deserve attention."
+    ],
+    "avoid_repeating_topics_for_runs": 5
+  }
+}

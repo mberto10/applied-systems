@@ -17,6 +17,28 @@ Planned contents:
 
 Initial public scaffold. The first artifact package is being prepared for the launch essay and will be expanded as the essay moves through Substack formatting and QA.
 
+## Plugins
+
+This repository is also a plugin marketplace for Claude Code and Codex.
+
+| Plugin | What it does |
+|---|---|
+| [`attention-diet`](plugins/attention-diet/) | Turns the feeds and messages you choose into one short briefing, read-only, with explicit limits and memory of what you already saw. |
+
+Claude Code:
+
+```text
+/plugin marketplace add mberto10/applied-systems
+/plugin install attention-diet@applied-systems
+```
+
+Codex:
+
+```sh
+codex plugin marketplace add mberto10/applied-systems
+codex plugin add attention-diet@applied-systems
+```
+
 ## License
 
-License is explicitly deferred for the launch scaffold. Until a license is added, this repository is public for reading and reference, but no reuse license is granted.
+[MIT](LICENSE).

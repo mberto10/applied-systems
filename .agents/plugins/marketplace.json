@@ -1,0 +1,12 @@
+{
+  "name": "applied-systems",
+  "interface": {"displayName": "Applied Systems"},
+  "plugins": [
+    {
+      "name": "attention-diet",
+      "source": {"source": "local", "path": "./plugins/attention-diet"},
+      "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
+      "category": "Productivity"
+    }
+  ]
+}

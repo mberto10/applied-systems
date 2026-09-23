@@ -1,0 +1,16 @@
+{
+  "name": "applied-systems",
+  "owner": {"name": "Maximilian Bruhn"},
+  "metadata": {"description": "Plugins from the Applied Attention publication."},
+  "plugins": [
+    {
+      "name": "attention-diet",
+      "source": "./plugins/attention-diet",
+      "description": "Turn your chosen feeds and messages into a short briefing with source links, explicit limits and memory of previously shown items.",
+      "version": "0.6.0",
+      "author": {"name": "Maximilian Bruhn"},
+      "category": "productivity",
+      "keywords": ["attention", "briefing", "feeds", "personalisation", "read-only"]
+    }
+  ]
+}

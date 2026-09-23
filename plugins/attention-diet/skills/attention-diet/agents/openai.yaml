@@ -1,0 +1,4 @@
+interface:
+  display_name: "Attention Diet"
+  short_description: "Run your attention contract and summarize what matters"
+  default_prompt: "Use $attention-diet to run my attention contract once and give me a concise overview."

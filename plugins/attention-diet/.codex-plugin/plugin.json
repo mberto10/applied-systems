@@ -1,0 +1,32 @@
+{
+  "name": "attention-diet",
+  "version": "0.6.0",
+  "description": "Turn your chosen feeds and messages into a short briefing with source links, explicit limits and memory of previously shown items.",
+  "skills": "./skills/",
+  "author": {
+    "name": "Maximilian Bruhn"
+  },
+  "interface": {
+    "displayName": "Attention Diet",
+    "shortDescription": "Your chosen sources. One short briefing.",
+    "longDescription": "Choose the sources, topics and limits for your briefing. Attention Diet checks permitted posts or messages, selects useful items with source links, and remembers previously shown item versions. Set it up, run it once, or tune what reaches you. Requires Python and a supported browser or authenticated connector; access and coverage depend on the selected sources.",
+    "developerName": "Maximilian Bruhn",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "Use Attention Diet to set up my two-minute briefing.",
+      "Use Attention Diet to check my sources once.",
+      "Use Attention Diet to show me fewer promotional posts."
+    ],
+    "websiteURL": "https://github.com/mberto10/applied-systems/tree/main/plugins/attention-diet",
+    "supportURL": "https://github.com/mberto10/applied-systems/issues",
+    "privacyPolicyURL": "https://github.com/mberto10/applied-systems/blob/main/plugins/attention-diet/docs/data-handling.md"
+  },
+  "keywords": [
+    "attention",
+    "briefing",
+    "feeds",
+    "personalisation",
+    "read-only"
+  ]
+}
