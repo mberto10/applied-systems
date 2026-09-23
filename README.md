@@ -1,43 +1,42 @@
 # Applied Systems
 
-Reader-facing artifacts from [Applied Attention](https://appliedattention.substack.com/): working systems, eval contracts, dynamic workflows, and implementation notes from inside the AI shift.
+Working systems from [Applied Attention](https://appliedattention.substack.com/), packaged so you can install, inspect and adapt them. The articles explain the reasoning; this repository holds the code.
 
-This repository is the public companion surface for Applied Systems pieces. The writing explains the judgment; this repo holds the artifacts a reader can inspect, adapt, and argue with.
-
-## Launch package
-
-The first package supports the Applied Attention opener on custom harnesses and Claude dynamic workflows.
-
-Planned contents:
-
-- `dynamic-workflows/` - contract references and workflow-shape notes for dynamic workflows.
-- `examples/eval-contracts/` - concrete eval-contract examples referenced by the essay.
-
-## Status
-
-Initial public scaffold. The first artifact package is being prepared for the launch essay and will be expanded as the essay moves through Substack formatting and QA.
+It is also a plugin marketplace for **Claude Code** and **Codex**.
 
 ## Plugins
 
-This repository is also a plugin marketplace for Claude Code and Codex.
+| Plugin | What it does | Version |
+|---|---|---|
+| [Attention Diet](plugins/attention-diet/) | Checks the feeds and messages you choose and returns one short briefing. Read-only, with explicit limits and memory of what you already saw. | 0.6.0 |
 
-| Plugin | What it does |
-|---|---|
-| [`attention-diet`](plugins/attention-diet/) | Turns the feeds and messages you choose into one short briefing, read-only, with explicit limits and memory of what you already saw. |
+## Install
 
-Claude Code:
+**Claude Code**
 
 ```text
 /plugin marketplace add mberto10/applied-systems
 /plugin install attention-diet@applied-systems
 ```
 
-Codex:
+**Codex**
 
 ```sh
 codex plugin marketplace add mberto10/applied-systems
 codex plugin add attention-diet@applied-systems
 ```
+
+Start a new session afterwards so the skills load. Each plugin's README covers its own requirements; Attention Diet needs Python 3.10 or later and a supported browser or connector for each source.
+
+## Layout
+
+```text
+plugins/<name>/                    one folder per plugin, with its own README, CHANGELOG and LICENSE
+.claude-plugin/marketplace.json    marketplace for Claude Code
+.agents/plugins/marketplace.json   marketplace for Codex
+```
+
+Releases are tagged per plugin, for example `attention-diet-v0.6.0`. Questions and problems: [open an issue](https://github.com/mberto10/applied-systems/issues).
 
 ## License
 
