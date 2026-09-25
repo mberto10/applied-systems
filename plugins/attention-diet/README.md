@@ -46,6 +46,8 @@ codex plugin marketplace add mberto10/applied-systems
 codex plugin add attention-diet@applied-systems
 ```
 
+Browser sources need the Claude Code desktop app (Browser pane) or the Codex app (in-app browser). In a terminal-only session, choose the agent-browser CLI or a connector during setup.
+
 Then prepare Python once; see [runtime setup](#runtime-setup). The [installation guide](docs/installation.md) covers browser requirements per host and common problems. Start a new session after installing so the skills load.
 
 ## First check
@@ -72,7 +74,7 @@ For a check, sign in yourself in the selected isolated browser if needed, or use
 | [Briefing memory](integrations/memory/README.md) | Which item versions were already shown. Local files or Supermemory |
 | [Interfaces](docs/contract-guide.md#output) | One selection as Markdown in the conversation, a dense HTML list, an HTML card grid, or a view of your own |
 
-The agent reads sources and judges relevance. The Python helpers do what a model does unreliably: measure time, count distinct items, fingerprint and compare versions, enforce the contract's structure and escape source text. They do not launch browsers, supply connectors, intercept tool calls or confirm that an observation is true. The plugin has no service-specific code: a new source is a contract edit. See the [architecture](docs/architecture.md).
+The agent reads sources and judges relevance. The Python helpers do what a model does unreliably: measure time, count distinct items, fingerprint and compare versions, enforce the contract's structure and escape source text. They do not launch browsers, supply connectors, intercept tool calls or confirm that an observation is true. Sources need no service-specific code: a new source is a contract edit. The only service-specific rule normalises X post links, so one post is counted once. See the [architecture](docs/architecture.md).
 
 ## Requirements
 
@@ -92,7 +94,7 @@ The agent reads sources and judges relevance. The Python helpers do what a model
 
 ## Runtime setup
 
-Use a dedicated Python environment outside the plugin directory so plugin updates preserve it. From the plugin root:
+Use a dedicated Python environment outside the plugin directory so plugin updates preserve it. If it is missing, the agent sets it up on first use with these steps. To prepare it yourself, run them from the plugin folder (in a clone of this repository, `plugins/attention-diet`):
 
 ```sh
 python3 -m venv ~/.cache/attention-diet-venv
@@ -117,6 +119,8 @@ History is scoped by contract and service account. You can keep several contract
 ## Interaction boundaries
 
 Runs observe and navigate: no replies, invitation decisions, reactions, follows or settings changes. Viewing a page can still have effects on the service's side, such as marking an automatically selected item as read; the contract's read-state procedure governs inspection, and uncertain effects are disclosed. The validator rejects a contract that permits outbound actions. Compliance during a run depends on the agent following its instructions and on the host's own controls.
+
+Check a service's terms before adding it as a source: many user agreements restrict automated access. You choose and are responsible for the sources in your contract.
 
 Source content is processed by the agent's model provider. With Supermemory, included-item summaries and identifying metadata are stored in the configured space. Each invocation produces one overview in the current conversation, as Markdown or a link to a local HTML file. Nothing is scheduled, hosted or delivered elsewhere. See [data handling](docs/data-handling.md) for local records, temporary run files, browser profiles and external providers.
 
