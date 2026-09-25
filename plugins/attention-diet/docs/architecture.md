@@ -65,7 +65,7 @@ Only for Supermemory on Codex, [`codex_adapter.js`](../integrations/codex-adapte
 
 ## Selection and presentation
 
-`attention-selection/1.1` is the boundary between collection and output. It holds the contract revision, run identity, coverage for every configured surface including unchecked ones, the selected entries, their source links and the item versions they represent. Validation checks scope, output ceilings, duplicate versions and account consistency. A source link may be null; the entry then keeps its source attribution.
+`attention-selection/1.2` is the boundary between collection and output. It holds the contract revision, run identity, coverage for every configured surface including unchecked ones, the selected entries, their source links and the item versions they represent. Validation checks scope, output ceilings, duplicate versions and account consistency. A source link may be null; the entry then keeps its source attribution.
 
 Every interface renders this record, so changing the view never collects again, changes what was selected or writes memory. The built-in views are Markdown, a dense HTML list and an HTML card grid. A template beside the contract can replace them, and a template that takes the selection as `$data` can build any view from it; such a template must stay offline through a Content-Security-Policy, which the renderer enforces. Every view keeps the completeness line and the notices. HTML output is a local file: nothing is hosted, delivered or scheduled.
 
