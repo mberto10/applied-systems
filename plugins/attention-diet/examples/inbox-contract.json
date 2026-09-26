@@ -1,0 +1,119 @@
+{
+  "schema_version": "attention-diet-contract/1.3",
+  "id": "inbox",
+  "revision": 1,
+  "intent": {
+    "purpose": "Catch the newsletters and saved-search alerts worth reading without working through the inbox myself.",
+    "success": "A two-minute overview of the issues and alerts that match my interests; nothing if nothing qualifies.",
+    "interests": [
+      {
+        "id": "ai-tools",
+        "focus": "Newsletter issues with a concrete AI method, tool or result, not announcements alone."
+      },
+      {
+        "id": "flat-search",
+        "focus": "New listings from my saved flat search that fit its criteria."
+      }
+    ],
+    "excluded": [
+      "Routine product promotion.",
+      "Sponsored sections and event advertising.",
+      "Price-change notices.",
+      "outbound_account_actions"
+    ]
+  },
+  "coverage_threads": [
+    {
+      "id": "inbox-alerts",
+      "service": "email",
+      "content": "private_communication",
+      "access": {
+        "type": "connector",
+        "tool_namespace": "mail_connector_found_in_setup",
+        "fallback": "none"
+      },
+      "expected_account": "you@example.com",
+      "account_actions": "none",
+      "surfaces": [
+        "newsletters",
+        "alerts"
+      ],
+      "excluded_surfaces": [],
+      "targets": {
+        "newsletters": {
+          "scope": "Messages in the inbox from the newsletter senders listed in setup, received in the last seven days."
+        },
+        "alerts": {
+          "scope": "Saved-search alert messages in the inbox from the alert senders listed in setup, received in the last seven days."
+        }
+      },
+      "procedure": {
+        "account_identity": "Establish the mailbox address from connection metadata; it must equal expected_account before any message is listed.",
+        "read_state": "List and preview with operations documented not to change read state. Open a full message only through such an operation; otherwise summarise from the preview and label it as one.",
+        "item_identity": "Use the message ID; one message counts as one item, including an alert that lists several results. Messages do not change after receipt.",
+        "pagination": "Follow the connector's continuation token until the scope is exhausted or the inspection limit is reached; report which of the two ended the listing.",
+        "retrieval": "Use the verified list and read operations for the inbox, restricted to the senders and time window in each target's scope."
+      },
+      "collection": {
+        "newsletters": {
+          "mode": "scan"
+        },
+        "alerts": {
+          "mode": "scan"
+        }
+      },
+      "selection": {
+        "include": "Newsletter issues with a concrete method, tool or result that matches a listed interest, and alerts with listings that fit the saved search. Give the reason for inclusion.",
+        "exclude": [
+          "Issues that only announce or promote."
+        ],
+        "uncertain_relevance": "Omit weak matches; do not fill the allowance.",
+        "evidence": "Summarize only inspected content, label truncated previews and distinguish source claims from verified facts."
+      },
+      "on_access_failure": "Report the unavailable surface; do not fall back to a browser or another access route."
+    }
+  ],
+  "memory_context": {
+    "provider": "local",
+    "directory": "~/.local/state/attention-diet/inbox",
+    "purpose": "avoid_repeating_previously_briefed_items",
+    "on_unavailable": "continue_with_notice"
+  },
+  "run_limits": {
+    "elapsed_minutes": 4,
+    "items_per_surface": 60,
+    "service_minutes": {
+      "email": 4
+    }
+  },
+  "composition": {
+    "interface": "agent_summary",
+    "delivery": "current_agent_conversation",
+    "template": "./interfaces/agent-summary/template.md",
+    "template_path_base": "plugin_root",
+    "format": "markdown",
+    "sections": [
+      "overview",
+      "updates"
+    ],
+    "target_reading_minutes": 2,
+    "max_items_by_thread": {
+      "inbox-alerts": 5
+    }
+  },
+  "execution": {
+    "mode": "one_off_on_invocation",
+    "schedule_enabled": false,
+    "daily_time": null
+  },
+  "serendipity": {
+    "enabled": false,
+    "max_items": 1,
+    "sources": [],
+    "share_of_discovery_sample": 0.2,
+    "test": [
+      "Substantive, clearly outside the listed interests, with a concrete reason to deserve attention."
+    ],
+    "avoid_repeating_topics_for_runs": 5
+  }
+}

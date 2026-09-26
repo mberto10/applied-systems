@@ -1,18 +1,20 @@
 # Attention Diet
 
-**A short briefing from the sources you choose.**
+**A short briefing from the sources you choose, in a view of your own.**
 
-Attention Diet helps you catch up on useful posts and messages without browsing every feed yourself. Choose what matters, what to skip and how much time to spend. The agent checks those sources, returns a finite selection with links, and uses briefing memory to avoid showing the same item versions again.
+Attention Diet gathers what you want to follow from several services into one **attention contract**: an editable file that says which sources to check, which topics and people matter to you, what to leave out, how much to inspect and how long the briefing should be. When you ask, the agent checks those sources against the contract and returns a finite selection with reasons and links. The check ends, and the briefing can be empty when nothing qualifies. Briefing memory keeps item versions you have already been shown out of the next one.
 
-Your choices live in an **attention contract**: an editable file that defines sources, interests, exclusions, inspection limits and presentation. Change it explicitly as your needs change.
+You choose how to read the result: in the conversation, as a local HTML list or card grid, or in a view you ask the agent to build. Changing the view never changes what was selected. The contract changes only when you ask for it; clicks never change it.
 
 ## What you can ask for
 
-- A brief selection of substantive updates from accounts you follow, with routine promotion excluded.
-- Useful AI demos or techniques from chosen communities, where the agent can inspect concrete evidence.
-- A separate overview of permitted messages or notifications, with source-specific read-state rules.
+- The newsletters and saved-search alerts in your inbox (marketplaces, job boards, flat hunting) in one briefing, without working through the inbox. The [inbox example](examples/inbox-contract.json) is a starting point.
+- New releases of the GitHub projects you rely on.
+- Posts from a handful of accounts on an open network such as Bluesky, without the home feed or recommendations.
 
-These are configurable uses, not bundled service integrations. Each source needs a supported browser or authenticated connector and a procedure that matches its actual interface. Collection can be incomplete; the briefing says what was checked and where it stopped.
+These are configurable uses, not bundled service integrations. Each source needs an authenticated connector or a supported browser, and a procedure that matches its actual interface. Collection can be incomplete; the briefing says what was checked and where it stopped.
+
+**Check a service's terms before adding it as a browser source.** Most platforms built around a feed prohibit automated access in their user agreements. Connectors, which use a service's official access, and the alerts a service sends by email are the routes most services permit. You choose and are responsible for the sources in your contract.
 
 ## What you receive
 
@@ -60,7 +62,7 @@ Check my sources once.
 From now on, show me fewer promotional posts.
 ```
 
-`setup` asks only for missing choices and creates your contract at `~/.config/attention-diet/contracts/<id>/attention_contract.json`, outside the plugin so updates preserve it. Setup never collects source content. Its [template](templates/attention-contract.json) supplies defaults; [a sample contract](examples/sample-contract.json) shows a filled-in one.
+`setup` asks only for missing choices and creates your contract at `~/.config/attention-diet/contracts/<id>/attention_contract.json`, outside the plugin so updates preserve it. Setup never collects source content. Its [template](templates/attention-contract.json) supplies defaults. Two filled-in examples show both kinds of source: [the inbox example](examples/inbox-contract.json) reads newsletters and alerts through a mail connector, and [the sample contract](examples/sample-contract.json) reads a public community page in a browser. In the inbox example, `tool_namespace` and `expected_account` are placeholders: setup fills in the exact connector it finds in your session and your mailbox address.
 
 For a check, sign in yourself in the selected isolated browser if needed, or use the configured connected account. The agent checks the permitted areas and returns one overview. `tune` applies a precisely authorized lasting correction, presents a focused diff when you ask for a proposal, and shows what your contract contains. Clicking or ignoring an item never changes your interests.
 
@@ -119,8 +121,6 @@ History is scoped by contract and service account. You can keep several contract
 ## Interaction boundaries
 
 Runs observe and navigate: no replies, invitation decisions, reactions, follows or settings changes. Viewing a page can still have effects on the service's side, such as marking an automatically selected item as read; the contract's read-state procedure governs inspection, and uncertain effects are disclosed. The validator rejects a contract that permits outbound actions. Compliance during a run depends on the agent following its instructions and on the host's own controls.
-
-Check a service's terms before adding it as a source: many user agreements restrict automated access. You choose and are responsible for the sources in your contract.
 
 Source content is processed by the agent's model provider. With Supermemory, included-item summaries and identifying metadata are stored in the configured space. Each invocation produces one overview in the current conversation, as Markdown or a link to a local HTML file. Nothing is scheduled, hosted or delivered elsewhere. See [data handling](docs/data-handling.md) for local records, temporary run files, browser profiles and external providers.
 
