@@ -8,7 +8,7 @@ It is also a plugin marketplace for **Claude Code** and **Codex**.
 
 | Plugin | What it does | Version |
 |---|---|---|
-| [Attention Diet](plugins/attention-diet/) | Checks the feeds and messages you choose and returns one short briefing. Read-only, with explicit limits and memory of what you already saw. | 0.6.0 |
+| [Attention Diet](plugins/attention-diet/) | One attention contract for the sources you choose, such as the newsletters and alerts in your inbox, and one short briefing that ends. Read-only by design, with explicit limits and memory of what you already saw. | 0.6.0 |
 
 ## Install
 

@@ -1,7 +1,7 @@
 {
   "name": "attention-diet",
   "version": "0.6.0",
-  "description": "Turn your chosen feeds and messages into a short briefing with source links, explicit limits and memory of previously shown items.",
+  "description": "One attention contract for the sources you choose, and a short briefing that ends: source links, explicit limits and memory of previously shown items.",
   "author": {
     "name": "Maximilian Bruhn"
   },

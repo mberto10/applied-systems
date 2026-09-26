@@ -2,6 +2,14 @@
 
 Contracts stay on `attention-diet-contract/1.3` and memory records on `attention-summary/1.0` throughout; no migration is needed.
 
+## Unreleased
+
+Documentation only; no change to skills, helpers or schemas.
+
+- README leads with the attention contract, the finite check and your own view; examples are inbox newsletters and alerts, GitHub releases and selected accounts on an open network.
+- The terms caution moves up: most platforms built around a feed prohibit automated access, so connectors, APIs and email alerts come first.
+- New connector example, `examples/inbox-contract.json`, next to the browser sample.
+
 ## 0.6.0 · 2026-09-23
 
 First public release.

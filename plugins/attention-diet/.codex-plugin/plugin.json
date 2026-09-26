@@ -1,7 +1,7 @@
 {
   "name": "attention-diet",
   "version": "0.6.0",
-  "description": "Turn your chosen feeds and messages into a short briefing with source links, explicit limits and memory of previously shown items.",
+  "description": "One attention contract for the sources you choose, and a short briefing that ends: source links, explicit limits and memory of previously shown items.",
   "skills": "./skills/",
   "author": {
     "name": "Maximilian Bruhn"
@@ -9,7 +9,7 @@
   "interface": {
     "displayName": "Attention Diet",
     "shortDescription": "Your chosen sources. One short briefing.",
-    "longDescription": "Choose the sources, topics and limits for your briefing. Attention Diet checks permitted posts or messages, selects useful items with source links, and remembers previously shown item versions. Set it up, run it once, or tune what reaches you. Requires Python and a supported browser or authenticated connector; access and coverage depend on the selected sources.",
+    "longDescription": "Choose the sources, topics and limits for your briefing. Attention Diet checks permitted sources, such as the newsletters and alerts in your inbox, selects useful items with source links, and remembers previously shown item versions. Set it up, run it once, or tune what reaches you. Requires Python and a supported browser or authenticated connector; access and coverage depend on the selected sources.",
     "developerName": "Maximilian Bruhn",
     "category": "Productivity",
     "capabilities": [],
