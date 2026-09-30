@@ -17,6 +17,8 @@ MEMORY_OPERATIONS = ['list_spaces', 'list_documents', 'get_document', 'add_memor
 def guide_for(route):
     if route['type'] == 'browser':
         return 'integrations/browsers/' + BROWSERS[route['provider']] if route.get('provider') else None
+    if route['type'] == 'feed':
+        return 'integrations/feeds.md'
     return 'integrations/connectors.md'
 
 
@@ -25,7 +27,7 @@ def prepare(path, host):
     contract = contract_api.validate(contract_api.memory.read_json(path))
     # The run skill owns collection rules. Load only integrations used by this run.
     guides = []
-    routes, namespaces, browser = [], [], False
+    routes, namespaces, browser, feeds = [], [], False, False
     for thread in contract['coverage_threads']:
         access = copy.deepcopy(thread['access'])
         if access['type'] == 'browser':
@@ -39,6 +41,11 @@ def prepare(path, host):
                      'host_supported': supported, 'availability': 'verify_tools_and_account' if supported else 'unavailable'}
             if provider:
                 guides.append('integrations/browsers/' + BROWSERS[provider])
+        elif access['type'] == 'feed':
+            feeds = True
+            guides.append('integrations/feeds.md')
+            # No sign-in and no host tools: the bundled helper reads the contract's own feed URLs.
+            route = {'thread_id': thread['id'], **access, 'account_key': 'feed:public', 'availability': 'fetch_on_run'}
         else:
             guides.append('integrations/connectors.md')
             namespaces.append(access['tool_namespace'])
@@ -58,6 +65,8 @@ def prepare(path, host):
     helpers = {'runtime': str(ROOT / 'scripts/runtime.py')}
     if browser:
         helpers['browser_extract'] = str(ROOT / 'scripts/browser_extract.js')
+    if feeds:
+        helpers['feed'] = str(ROOT / 'scripts/feed.py')
     if host == 'codex' and remote:
         helpers['host_adapter'] = str(ROOT / 'scripts/codex_adapter.js')
     # One collector per source service: threads of one service share an account, a tab and a time allowance.

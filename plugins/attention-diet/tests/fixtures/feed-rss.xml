@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<channel>
+<title>An Example Writer</title>
+<link>https://writer.example.org/</link>
+<item>
+  <title>A repeatable method, with its limits</title>
+  <link>https://writer.example.org/p/method</link>
+  <guid isPermaLink="false">writer-post-3</guid>
+  <dc:creator>Alex Example</dc:creator>
+  <pubDate>Tue, 29 Sep 2026 07:30:00 +0200</pubDate>
+  <description>&lt;p&gt;First paragraph with &lt;b&gt;markup&lt;/b&gt;.&lt;/p&gt;&lt;p&gt;Second paragraph.&lt;/p&gt;</description>
+</item>
+<item>
+  <title>Sponsored: a tool you should buy</title>
+  <link>https://writer.example.org/p/sponsored</link>
+  <guid>writer-post-2</guid>
+  <pubDate>Mon, 28 Sep 2026 09:00:00 GMT</pubDate>
+  <description>Promotion.</description>
+</item>
+<item>
+  <title>A repeatable method, with its limits</title>
+  <link>https://writer.example.org/p/method</link>
+  <guid isPermaLink="false">writer-post-3</guid>
+  <description>The same entry listed twice.</description>
+</item>
+<item>
+  <title>Link only, served over http</title>
+  <link>http://writer.example.org/p/old</link>
+  <pubDate>no date</pubDate>
+</item>
+<item>
+  <title>Neither id nor link</title>
+</item>
+</channel>
+</rss>

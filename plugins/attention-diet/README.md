@@ -11,10 +11,12 @@ You choose how to read the result: in the conversation, as a local HTML list or 
 - The newsletters and saved-search alerts in your inbox (marketplaces, job boards, flat hunting) in one briefing, without working through the inbox. The [inbox example](examples/inbox-contract.json) is a starting point.
 - New releases of the GitHub projects you rely on.
 - Posts from a handful of accounts on an open network such as Bluesky, without the home feed or recommendations.
+- New posts, videos and episodes from the writers, channels and podcasts you follow, through their RSS or Atom feeds. The [feeds example](examples/feeds-contract.json) is a starting point.
+- A readable page of your contract: what counts, what is left out, when a check stops and how it changed over time. Ask to see your contract.
 
-These are configurable uses, not bundled service integrations. Each source needs an authenticated connector or a supported browser, and a procedure that matches its actual interface. Collection can be incomplete; the briefing says what was checked and where it stopped.
+These are configurable uses, not bundled service integrations. Each source needs a feed, an authenticated connector or a supported browser, and a procedure that matches its actual interface. Collection can be incomplete; the briefing says what was checked and where it stopped.
 
-**Check a service's terms before adding it as a browser source.** Most platforms built around a feed prohibit automated access in their user agreements. Connectors, which use a service's official access, and the alerts a service sends by email are the routes most services permit. You choose and are responsible for the sources in your contract.
+**Check a service's terms before adding it as a browser source.** Most platforms built around a feed prohibit automated access in their user agreements. Feeds a service publishes, connectors, which use a service's official access, and the alerts a service sends by email are the routes most services permit. You choose and are responsible for the sources in your contract.
 
 ## What you receive
 
@@ -64,7 +66,7 @@ From now on, show me fewer promotional posts.
 
 `setup` asks only for missing choices and creates your contract at `~/.config/attention-diet/contracts/<id>/attention_contract.json`, outside the plugin so updates preserve it. Setup never collects source content. Its [template](templates/attention-contract.json) supplies defaults. Two filled-in examples show both kinds of source: [the inbox example](examples/inbox-contract.json) reads newsletters and alerts through a mail connector, and [the sample contract](examples/sample-contract.json) reads a public community page in a browser. In the inbox example, `tool_namespace` and `expected_account` are placeholders: setup fills in the exact connector it finds in your session and your mailbox address.
 
-For a check, sign in yourself in the selected isolated browser if needed, or use the configured connected account. The agent checks the permitted areas and returns one overview. `tune` applies a precisely authorized lasting correction, presents a focused diff when you ask for a proposal, and shows what your contract contains. Clicking or ignoring an item never changes your interests.
+For a check, sign in yourself in the selected isolated browser if needed, or use the configured connected account; feeds need no sign-in. The agent checks the permitted areas and returns one overview. `tune` applies a precisely authorized lasting correction and presents a focused diff when you ask for a proposal. `view-contract` renders your contract as one readable local page. Clicking or ignoring an item never changes your interests.
 
 ## How the parts fit together
 
@@ -76,7 +78,7 @@ For a check, sign in yourself in the selected isolated browser if needed, or use
 | [Briefing memory](integrations/memory/README.md) | Which item versions were already shown. Local files or Supermemory |
 | [Interfaces](docs/contract-guide.md#output) | One selection as Markdown in the conversation, a dense HTML list, an HTML card grid, or a view of your own |
 
-The agent reads sources and judges relevance. The Python helpers do what a model does unreliably: measure time, count distinct items, fingerprint and compare versions, enforce the contract's structure and escape source text. They do not launch browsers, supply connectors, intercept tool calls or confirm that an observation is true. Sources need no service-specific code: a new source is a contract edit. The only service-specific rule normalises X post links, so one post is counted once. See the [architecture](docs/architecture.md).
+The agent reads sources and judges relevance. The Python helpers do what a model does unreliably: measure time, count distinct items, fingerprint and compare versions, enforce the contract's structure and escape source text. They do not launch browsers, supply connectors, intercept tool calls or confirm that an observation is true; the one exception is reading public feeds named in the contract. Sources need no service-specific code: a new source is a contract edit. The only service-specific rule normalises X post links, so one post is counted once. See the [architecture](docs/architecture.md).
 
 ## Requirements
 
@@ -104,11 +106,11 @@ python3 -m venv ~/.cache/attention-diet-venv
 ~/.cache/attention-diet-venv/bin/python scripts/contract.py list
 ```
 
-Agents reuse this environment and call its Python by absolute path, because shell activation does not carry over between tool calls. If dependencies are missing, the helpers say so before any collection; validation is never skipped. Schemas are bundled and nothing is fetched at run time.
+Agents reuse this environment and call its Python by absolute path, because shell activation does not carry over between tool calls. If dependencies are missing, the helpers say so before any collection; validation is never skipped. Schemas are bundled. The only network request a helper makes is the feed helper reading a feed URL named in your contract.
 
 ## Sources and coverage
 
-Add a source by describing it in the contract: its access route, surfaces, entry URLs or connector targets, selection rules and [procedure](docs/contract-guide.md#describing-a-source). Its procedure still has to match the interface or connector you actually observed.
+Add a source by describing it in the contract: its access route, surfaces, entry URLs, feed URLs or connector targets, selection rules and [procedure](docs/contract-guide.md#describing-a-source). Its procedure still has to match the interface or connector you actually observed.
 
 Each surface is scanned or sampled. Collection stops only at a supported boundary: exhausted results, a contract ceiling, an access failure, a documented retrieval limit, or evidence that the rest was already covered. Output limits apply separately, so finding enough entries never ends inspection early. Every briefing carries a completeness line and brief coverage notices grouped by service, with consequential read-state and memory warnings, so "nothing new" stays distinguishable from "could not look".
 

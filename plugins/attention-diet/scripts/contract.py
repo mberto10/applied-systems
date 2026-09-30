@@ -30,10 +30,13 @@ def validate_thread(thread):
             label + ": a surface is both included and excluded")
     target_field = "entry_urls" if thread["access"]["type"] == "browser" else "targets"
     require(set(thread[target_field]) == surfaces, label + ": " + target_field + " must cover every configured surface")
-    for url in thread.get("entry_urls", {}).values():
+    if thread["access"]["type"] == "feed":
+        require(set(thread["feed_urls"]) == surfaces, label + ": feed_urls must cover every configured surface")
+        require(thread.get("content") == "public_posts", label + ": a feed is public; mark content as public_posts")
+    for url in [*thread.get("entry_urls", {}).values(), *thread.get("feed_urls", {}).values()]:
         parsed = urlsplit(url)
         require(parsed.scheme == "https" and parsed.hostname and not parsed.username and not parsed.password,
-                label + ": entry URLs must be plain https")
+                label + ": entry and feed URLs must be plain https")
     require(set(thread.get("collection", {})) <= surfaces, label + ": collection must name configured surfaces")
 
 
