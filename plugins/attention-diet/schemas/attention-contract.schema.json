@@ -184,6 +184,23 @@
           "const": "none"
         }
       }
+    },
+    "feedAccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "fallback"
+      ],
+      "description": "An RSS or Atom feed read by the bundled feed helper, without a browser or sign-in.",
+      "properties": {
+        "type": {
+          "const": "feed"
+        },
+        "fallback": {
+          "const": "none"
+        }
+      }
     }
   },
   "properties": {
@@ -273,6 +290,9 @@
               },
               {
                 "$ref": "#/$defs/connectorAccess"
+              },
+              {
+                "$ref": "#/$defs/feedAccess"
               }
             ]
           },
@@ -300,6 +320,15 @@
           },
           "entry_urls": {
             "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^https://",
+              "format": "uri"
+            }
+          },
+          "feed_urls": {
+            "type": "object",
+            "description": "One RSS or Atom feed URL per surface, for feed access.",
             "additionalProperties": {
               "type": "string",
               "pattern": "^https://",
@@ -462,6 +491,29 @@
                     "navigation": false
                   }
                 }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "access": {
+                  "properties": {
+                    "type": {
+                      "const": "feed"
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "feed_urls"
+              ]
+            },
+            "else": {
+              "properties": {
+                "feed_urls": false
               }
             }
           }
