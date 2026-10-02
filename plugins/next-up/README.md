@@ -1,42 +1,62 @@
 # Next up
 
-A Claude Code mod that suggests what to do next. When a turn ends with an answer, it proposes up to three next prompts above the prompt box: a continuation of the current work, or an open GitHub issue, pull request or Linear issue that fits it.
+A Claude Code mod that answers "what now?". When a turn ends, up to three next prompts appear above the prompt box: a continuation of what you just did, or the open GitHub issue, pull request or Linear issue that fits it best. Type a number to send one.
 
 ```text
 Next up (mixed) · type a number and Enter to send it, or click one to edit it first
-1: Add tests for the anchor fix               #12
-2: Review the onboarding copy                 ENG-42
-3: Split the release notes by component       continue
+1: Add tests for the anchor fix          continue · follows the fix just made
+2: Review the release notes PR           #5 · touches the same module
+3: Draft the onboarding copy             ENG-42 · in progress, high priority
 dismiss
 ```
+
+Mods are Claude Code plugins that change the interface itself; this one draws a band above the prompt and needs no setup beyond the sources you want.
+
+## Quick start
+
+1. **Install** (Claude Code 2.1.287 or later):
+
+   ```text
+   /plugin marketplace add mberto10/applied-systems
+   /plugin install next-up@applied-systems
+   ```
+
+2. **Allow Linear** (skip if you only use GitHub). The mod reads Linear in the background, where nobody can be asked, so allow the connector's read-only `list_issues` tool once in `/permissions`. In the terminal it is `mcp__claude_ai_Linear__list_issues`; in the desktop app the connector has an id, and `/next sources` names it.
+3. **Point it at your work**, once per repository:
+
+   ```text
+   /next linear project Website
+   /next mode linear
+   ```
+
+   `/next sources` shows what each source found.
 
 ## Modes
 
 | Mode | Steps come from |
 |---|---|
-| `mixed` (default) | The current work, open GitHub issues and pull requests, and your open Linear issues |
+| `mixed` (default) | One continuation, one GitHub item and one Linear item |
 | `linear` | Your open Linear issues only |
 | `github` | The repository's open issues and pull requests only |
-| `conversation` | The current work only; no source is read |
+| `conversation` | Continuations of the current work only; no source is read |
 
-`/next mode linear` switches the mode for the current project. The band's header shows the current mode.
+`/next mode <name>` switches the mode for the current repository. The band's header shows it.
 
-## Criteria per project
+## Criteria per repository
 
-Each project keeps its own criteria in `.claude/next-up.json` at the repository's top level. Set them with commands, or edit the file:
+Each repository keeps its own criteria in `.claude/next-up.json` at its top level. Set them with commands or edit the file; `off` clears a setting, lists are comma-separated.
 
-```text
-/next linear project Website, Docs     only these Linear projects
-/next linear states started,unstarted  only these state types (default: started, unstarted, backlog, triage)
-/next linear team Engineering
-/next linear label bug
-/next linear assignee any              anyone's issues, not only yours (default: me)
-/next linear query onboarding          title or description contains this
-/next github label good first issue
-/next github assignee @me
-/next github items issues              issues only, no pull requests
-/next linear project off               clears a setting
-```
+| Command | Effect |
+|---|---|
+| `/next linear project Website, Docs` | Only these Linear projects |
+| `/next linear states started,unstarted` | Only these state types (default: started, unstarted, backlog, triage) |
+| `/next linear team Engineering` | Only this team |
+| `/next linear label bug` | Only issues with this label |
+| `/next linear assignee any` | Anyone's issues (default: `me`) |
+| `/next linear query onboarding` | Title or description contains this |
+| `/next github label good first issue` | Only issues and pull requests with this label |
+| `/next github assignee @me` | Only those assigned to you |
+| `/next github items issues` | Issues only, no pull requests |
 
 ```json
 {
@@ -46,76 +66,85 @@ Each project keeps its own criteria in `.claude/next-up.json` at the repository'
 }
 ```
 
-Whether to commit the file is up to you: committed, the whole team shares the criteria.
+Commit the file and the whole team shares the criteria; leave it out and they stay yours.
 
-**Order.** Linear issues reach the ranker most important first: started before unstarted before backlog, then urgent, high, medium, low, no priority, then the most recently updated. GitHub lists pull requests first, then the newest issues. In `mixed` mode the ranker returns one step of each kind (a continuation, a GitHub item, a Linear item); in `linear` and `github` mode up to three of that source's items, preferring those related to the current work. Each step shows a short reason after its id.
+## How steps are chosen
 
-## How it works
+1. **When a turn ends** with an answer (not a question to you, not interrupted), the mod reads the sources the mode names:
+   - **GitHub:** open issues and pull requests through the `gh` CLI and your existing login.
+   - **Linear:** open issues through the Linear connector you already have; no API key is stored. The mod finds the connector by its `list_issues` tool, whatever the app calls it.
 
-1. **When a turn ends**, unless it ended with a question to you or was interrupted, the mod reads the sources the mode names:
-   - **GitHub:** open issues and pull requests in the current repository, through the `gh` CLI and your existing login.
-   - **Linear:** your open issues, through the Linear MCP server you already have connected. No API key is stored in the plugin.
+   Results are cached for five minutes; a source that does not answer within 20 seconds is skipped for that turn.
+2. **Code orders the candidates.** Linear: started before unstarted before backlog, then urgent, high, medium, low and no priority, then the most recently updated. GitHub: pull requests first, then the newest issues. The first 12 of each source go on.
+3. **A small model picks the steps.** `haiku` gets the last prompt and answer and the ordered list, and picks the items related to the current work; otherwise it keeps the order. Each step carries a short reason, shown after its id.
+4. **You choose.** Type `1`, `2` or `3` and Enter to send a step as written, or click it to edit it in the prompt box first. `0` dismisses the steps; any other prompt clears them.
 
-   The list is cached for five minutes. A source that does not answer within 20 seconds is skipped for that turn.
-2. **A ranker picks the steps.** By default a small model (`haiku`) gets the last exchange and the open items, and nothing else.
-3. **The steps appear above the prompt.** Type `1`, `2` or `3` and press Enter to send one as written, or click one to put it in the prompt box and edit it first. `0` dismisses them; any other prompt clears them.
+## Commands
 
 | Command | What it does |
 |---|---|
 | `/next` | Says how many steps are showing |
 | `/next refresh` | Reads the sources again and picks new steps |
-| `/next mode <name>` | Switches the mode for this project |
-| `/next linear <setting> <value>` / `/next github <setting> <value>` | Sets a criterion, see [Criteria per project](#criteria-per-project) |
+| `/next mode <name>` | Switches the mode for this repository |
+| `/next linear <setting> <value>` | Sets a Linear criterion |
+| `/next github <setting> <value>` | Sets a GitHub criterion |
 | `/next config` | Shows the criteria in force |
-| `/next sources` | Shows how many open items each source returned, or why it returned none |
+| `/next sources` | How many open items each source returned, or why none |
 
-## Context
+## Context and cost
 
-The suggestions never enter the conversation. Claude's context only grows by what you send: a step you pick is one short prompt, and `/next` answers with one line.
+The suggestions never enter the conversation. Claude's context grows only by what you send: a step is one short prompt, and `/next` answers in one line.
 
-The ranker runs as a separate request with its own budget:
+Picking the steps is a separate request with its own budget:
 
-- **`light`** (default): the last prompt and answer, each shortened to 750 characters, plus at most 12 open items per source with titles cut to 90 characters. Roughly 1,000 to 2,000 tokens, whatever the length of the session.
-- **`fork`**: the session's own model over the whole cached transcript. It knows the session better, but each request is as large as the conversation. When it does not answer (for one, near the context limit), the light ranker takes over.
-
-## Requirements
-
-- Claude Code 2.1.287 or later, which added mods. It works in the terminal and in the desktop app's Code tab.
-- For GitHub: the [`gh` CLI](https://cli.github.com/), signed in.
-- For Linear: a connected Linear MCP server, such as the Linear connector on claude.ai, and permission for its `list_issues` tool. The mod finds the server by its tool, whatever the connector is called. It reads Linear in the background, where nobody can be asked, so allow the tool once in `/permissions` or under `permissions.allow` in your settings. The name depends on the app: `mcp__claude_ai_Linear__list_issues` in the terminal, `mcp__<connector id>__list_issues` in the desktop app (`/next sources` names the server it found). Without it, the mod shows a reminder once and `/next sources` names the refusal.
-
-## Install
-
-```text
-/plugin marketplace add mberto10/applied-systems
-/plugin install next-up@applied-systems
-```
+- **`light`** (default): the last prompt and answer, each cut to 750 characters, and at most 12 items per source with titles cut to 90 characters. Roughly 1,000 to 2,000 tokens to a small model, however long the session.
+- **`fork`**: the session's own model over the whole cached transcript. It knows the session better, but each request is as large as the conversation. When it does not answer, for one near the context limit, the light ranker takes over.
 
 ## Settings
 
+Plugin-wide defaults; a repository's `.claude/next-up.json` overrides mode and criteria.
+
 | Setting | Default | What it does |
 |---|---|---|
-| Mode | `mixed` | `mixed`, `linear`, `github` or `conversation`; a project's `.claude/next-up.json` overrides it. |
-| GitHub items | `issues-and-prs` | Open issues and pull requests, or `issues` only. |
-| Linear server | empty | The Linear MCP server's name as `/mcp` lists it. Empty: the server whose `list_issues` tool is Linear's, found in the tool list, then `claude.ai Linear`, `Linear` and `linear`. |
-| Linear project | empty | The default Linear project when a project's file names none. Empty: all your open issues. |
-| Ranker | `light` | `light` or `fork`, see [Context](#context). |
-| Light ranker model | `haiku` | An alias or a full model id. |
-| Items per source | `12` | At most this many open items per source reach the ranker (up to 50). |
+| Mode | `mixed` | `mixed`, `linear`, `github` or `conversation` |
+| GitHub items | `issues-and-prs` | Or `issues` only |
+| Linear server | empty | A server name as `/mcp` lists it. Empty: found by its tool, then `claude.ai Linear`, `Linear`, `linear` |
+| Linear project | empty | A default project for repositories that name none |
+| Ranker | `light` | `light` or `fork`, see [Context and cost](#context-and-cost) |
+| Light ranker model | `haiku` | An alias or a full model id |
+| Items per source | `12` | At most this many items per source reach the ranker (up to 50) |
+
+## Troubleshooting
+
+`/next sources` names the reason when a source returns nothing:
+
+| It says | Do this |
+|---|---|
+| `requested permissions to use mcp__…__list_issues` | Allow that tool in `/permissions`; a new session picks it up |
+| `no connected MCP tool "list_issues"` | Connect the Linear connector, or set the Linear server setting to its name in `/mcp` |
+| `gh failed: …` | Run `gh auth login`, and start Claude Code inside a GitHub repository |
+| `no answer within 20s` | The source was slow; `/next refresh` tries again |
+| `off in this mode` | The mode skips that source: `/next mode mixed` |
 
 ## What it sends where
 
-Issue titles, states and identifiers go to the model that picks the steps, the same way they would if you asked Claude to read your issues. The mod writes nothing to GitHub or Linear. A step only takes effect when you send it, and then Claude works under your normal permissions.
+Issue titles, states, priorities and ids go to the model that picks the steps, as they would if you asked Claude to read your issues. The mod writes nothing to GitHub or Linear. It writes one file, `.claude/next-up.json`, and only when you set a criterion. A step takes effect only when you send it, and Claude then works under your normal permissions.
 
 ## Limits
 
-- Each finished turn costs one extra model request: a small one with the light ranker.
+- Each finished turn costs one extra small model request.
 - While steps are showing, a prompt that is only `1`, `2` or `3` sends that step instead.
-- Mods are new and their API may change between Claude Code releases.
+- Mods are new; their API may change between Claude Code releases.
 
 ## Development
 
-`claude plugin validate plugins/next-up` checks the manifest and hooks module; `claude plugin test plugins/next-up` runs the tests. To work on it live, run `claude --plugin-dir plugins/next-up`; saving a file reloads it.
+```sh
+claude plugin validate plugins/next-up
+claude plugin test plugins/next-up
+claude --plugin-dir plugins/next-up
+```
+
+The last runs a session with the mod loaded from disk; saving a file reloads it.
 
 ## License
 
