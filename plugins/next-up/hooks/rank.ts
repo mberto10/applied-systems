@@ -2,34 +2,96 @@ import type { NextStep, NextStepSource } from '../types'
 import type { WorkItem } from './sources'
 
 const MAX_STEPS = 3
-const SOURCES: readonly NextStepSource[] = ['continue', 'github', 'linear']
+const TITLE_CHARS = 90
+const DIGEST_CHARS = 1500
+const ALL_SOURCES: readonly NextStepSource[] = ['continue', 'github', 'linear']
+
+export const MODES = ['mixed', 'linear', 'github', 'conversation'] as const
+export type Mode = (typeof MODES)[number]
+
+/** A mode name, or null when the text is not one. */
+export function modeOf(text: string): Mode | null {
+  const name = text.trim().toLowerCase()
+
+  return (MODES as readonly string[]).includes(name) ? (name as Mode) : null
+}
+
+/** The step sources a mode allows. */
+export function sourcesOf(mode: Mode): readonly NextStepSource[] {
+  switch (mode) {
+    case 'linear':
+      return ['linear']
+    case 'github':
+      return ['github']
+    case 'conversation':
+      return ['continue']
+    default:
+      return ['continue', 'github', 'linear']
+  }
+}
 
 /** True when the answer ends by asking the person something. */
 export function asksPerson(answer: string): boolean {
   return /\?\s*$/.test(answer.trim())
 }
 
-/** The question asked over the session's own transcript. */
-export function rankPromptOf(items: readonly WorkItem[]): string {
-  const list = items.length === 0
+function clipped(text: string, chars: number): string {
+  const flat = text.replace(/\s+/g, ' ').trim()
+
+  return flat.length > chars ? `${flat.slice(0, chars - 1)}…` : flat
+}
+
+/** The newest `perSource` items of each source, titles shortened. */
+export function budgeted(items: readonly WorkItem[], perSource: number): WorkItem[] {
+  const counts: Record<string, number> = {}
+
+  return items
+    .filter(item => {
+      counts[item.source] = (counts[item.source] ?? 0) + 1
+
+      return counts[item.source]! <= perSource
+    })
+    .map(item => ({ ...item, title: clipped(item.title, TITLE_CHARS) }))
+}
+
+/** The last exchange, shortened, for a ranker that does not read the transcript. */
+export function digestOf(prompt: string, answer: string): string {
+  const half = Math.floor(DIGEST_CHARS / 2)
+
+  return `The person asked: ${clipped(prompt, half) || '(unknown)'}\nThe assistant answered: ${clipped(answer, half)}`
+}
+
+const GOALS: Record<Mode, string> = {
+  mixed: 'Pick up to three next steps from: (1) a natural continuation of what was just done, (2) open work items related to the current work, (3) urgent or high-priority items.',
+  linear: 'Pick up to three next steps, each one of the Linear items below: those related to the current work first, then urgent or high-priority ones. Do not suggest anything that is not one of these items.',
+  github: 'Pick up to three next steps, each one of the GitHub items below: those related to the current work first, then the most pressing. Do not suggest anything that is not one of these items.',
+  conversation: 'Pick up to three natural continuations of what was just done.',
+}
+
+/**
+ * The question that picks the steps. `digest` is the last exchange for a
+ * ranker that does not read the transcript; null when it does.
+ */
+export function rankPromptOf(items: readonly WorkItem[], mode: Mode, digest: string | null): string {
+  const allowed = sourcesOf(mode)
+  const listed = items.filter(item => allowed.includes(item.source))
+  const list = listed.length === 0
     ? '(none)'
-    : items.map(item => `- ${item.source} ${item.ref}: ${item.title}${item.detail !== '' ? ` [${item.detail}]` : ''}`).join('\n')
+    : listed.map(item => `- ${item.source} ${item.ref}: ${item.title}${item.detail !== '' ? ` [${item.detail}]` : ''}`).join('\n')
 
   return [
-    'Suggest what the person could do next in this session.',
-    'Pick up to three next steps from: (1) a natural continuation of what was just done, (2) open work items related to the current work, (3) urgent or high-priority items.',
-    'Write each step as the prompt the person would send you: an instruction, at most 30 words, self-contained, naming the item\'s id when it is about one. Do not suggest something already done.',
-    '',
-    'Open work items:',
-    list,
+    digest === null ? 'Suggest what the person could do next in this session.' : `Suggest what the person could do next in a coding session.\n\n${digest}`,
+    GOALS[mode],
+    'Write each step as the prompt the person would send the assistant: an instruction, at most 30 words, self-contained, naming the item\'s id when it is about one. Do not suggest something already done.',
+    ...(mode === 'conversation' ? [] : ['', 'Open work items:', list]),
     '',
     'Answer with JSON only, no prose:',
-    '[{"label": "<at most 60 characters>", "prompt": "<the prompt>", "source": "continue" | "github" | "linear", "ref": "<item id, or null>"}]',
+    `[{"label": "<at most 60 characters>", "prompt": "<the prompt>", "source": ${allowed.map(one => `"${one}"`).join(' | ')}, "ref": "<item id, or null>"}]`,
   ].join('\n')
 }
 
-/** The fork's answer as at most three valid steps; none when it is not JSON. */
-export function stepsOf(text: string): NextStep[] {
+/** The ranker's answer as at most three valid steps a mode allows. */
+export function stepsOf(text: string, mode: Mode = 'mixed'): NextStep[] {
   const start = text.indexOf('[')
   const end = text.lastIndexOf(']')
 
@@ -49,6 +111,7 @@ export function stepsOf(text: string): NextStep[] {
     return []
   }
 
+  const allowed = sourcesOf(mode)
   const steps: NextStep[] = []
 
   for (const one of value) {
@@ -62,10 +125,19 @@ export function stepsOf(text: string): NextStep[] {
       continue
     }
 
+    const isKnown = ALL_SOURCES.includes(source as NextStepSource)
+    const kind = isKnown
+      ? (allowed.includes(source as NextStepSource) ? (source as NextStepSource) : null)
+      : allowed.length === 1 ? allowed[0]! : 'continue'
+
+    if (kind === null) {
+      continue
+    }
+
     steps.push({
       label: label.trim().slice(0, 80),
       prompt: prompt.trim(),
-      source: SOURCES.includes(source as NextStepSource) ? (source as NextStepSource) : 'continue',
+      source: kind,
       ref: typeof ref === 'string' && ref.trim() !== '' ? ref.trim() : null,
     })
   }
@@ -84,15 +156,4 @@ export function pickOf(text: string, count: number): number | null {
   const index = Number(match[1]) - 1
 
   return index < count ? index : null
-}
-
-/** The `/next` command's text listing the steps. */
-export function listingOf(steps: readonly NextStep[]): string {
-  if (steps.length === 0) {
-    return 'No suggestions yet. They appear when a turn ends.'
-  }
-
-  return steps
-    .map((step, index) => `${index + 1}. ${step.label}${step.ref !== null ? ` (${step.ref})` : ''}\n   ${step.prompt}`)
-    .join('\n')
 }

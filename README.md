@@ -9,7 +9,7 @@ It is also a plugin marketplace for **Claude Code** and **Codex**.
 | Plugin | What it does | Version |
 |---|---|---|
 | [Attention Diet](plugins/attention-diet/) | One attention contract for the sources you choose, such as the newsletters and alerts in your inbox, and one short briefing that ends. Read-only by design, with explicit limits and memory of what you already saw. | 0.6.0 |
-| [Next up](plugins/next-up/) | A Claude Code mod: when a turn ends, up to three next prompts above the prompt box, from the conversation and your open GitHub and Linear work. Claude Code only. | 0.1.0 |
+| [Next up](plugins/next-up/) | A Claude Code mod: when a turn ends, up to three next prompts above the prompt box, from the conversation, GitHub or Linear, or all of them. Claude Code only. | 0.1.0 |
 
 ## Install
 
