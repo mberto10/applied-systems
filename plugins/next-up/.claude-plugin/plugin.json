@@ -1,0 +1,58 @@
+{
+  "name": "next-up",
+  "version": "0.1.0",
+  "description": "When a turn ends, suggests up to three next prompts from the conversation and your open GitHub issues, pull requests and Linear issues.",
+  "author": {
+    "name": "Maximilian Bruhn"
+  },
+  "keywords": [
+    "mod",
+    "next-steps",
+    "github",
+    "linear",
+    "prompts"
+  ],
+  "homepage": "https://github.com/mberto10/applied-systems/tree/main/plugins/next-up",
+  "repository": "https://github.com/mberto10/applied-systems",
+  "license": "MIT",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "github": {
+      "type": "string",
+      "title": "GitHub",
+      "description": "What to read from the current repository through the gh CLI: open issues and pull requests (default), issues only, or nothing.",
+      "required": false,
+      "default": "issues-and-prs",
+      "options": [
+        "issues-and-prs",
+        "issues",
+        "off"
+      ]
+    },
+    "linear": {
+      "type": "string",
+      "title": "Linear",
+      "description": "Read your open Linear issues through the connected Linear MCP server (default), or nothing.",
+      "required": false,
+      "default": "mine",
+      "options": [
+        "mine",
+        "off"
+      ]
+    },
+    "linearServer": {
+      "type": "string",
+      "title": "Linear server",
+      "description": "The Linear MCP server's name as /mcp lists it. Empty (default): tries \"claude.ai Linear\", \"Linear\" and \"linear\".",
+      "required": false,
+      "default": ""
+    },
+    "linearProject": {
+      "type": "string",
+      "title": "Linear project",
+      "description": "Only issues in this Linear project (name, identifier or slug). Empty (default): all your open issues.",
+      "required": false,
+      "default": ""
+    }
+  }
+}
