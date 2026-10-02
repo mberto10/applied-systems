@@ -10,6 +10,7 @@ import {
   githubPullsOf,
   LINEAR_FIELDS,
   linearIssuesOf,
+  linearServersOf,
   type WorkItem,
 } from './sources'
 
@@ -133,6 +134,35 @@ async function readGithub($: EngineInterface, config: ProjectConfig): Promise<{ 
 }
 
 /**
+ * One `list_issues` call: through the server directly, or, when the engine
+ * does not reach it that way, as the tool the model sees.
+ */
+async function listIssues($: EngineInterface, server: string, args: Record<string, unknown>): Promise<string> {
+  try {
+    const result = await $.mcp.call(server, 'list_issues', args)
+    const text = result.content.map(block => block.text ?? '').join('')
+
+    if (result.isError) {
+      throw new Error(text.slice(0, 160) || 'error')
+    }
+
+    return text
+  } catch (error) {
+    if (!(error instanceof Error) || !/no connected MCP tool/i.test(error.message)) {
+      throw error
+    }
+
+    const ran = await $.tool.call({ tool: `mcp__${server}__list_issues`, ...args })
+
+    if (ran.deny !== undefined || ran.isError) {
+      throw new Error(ran.deny ?? ran.text ?? 'error')
+    }
+
+    return ran.text ?? ''
+  }
+}
+
+/**
  * Reads open Linear issues through a connected Linear MCP server: the one
  * that answered last time, else the configured name, else the usual names
  * in turn. One call per project and label named in the criteria (at most
@@ -140,9 +170,14 @@ async function readGithub($: EngineInterface, config: ProjectConfig): Promise<{ 
  */
 async function readLinear($: EngineInterface, config: ProjectConfig): Promise<{ items: WorkItem[]; read: SourceRead }> {
   const linear = config.linear ?? {}
+  const discovered = runtime.linearServer === null && runtime.settings.linearServer === ''
+    ? linearServersOf(await $.tool.list().catch(() => []))
+    : []
   const servers = runtime.linearServer !== null
     ? [runtime.linearServer]
-    : runtime.settings.linearServer !== '' ? [runtime.settings.linearServer] : DEFAULT_LINEAR_SERVERS
+    : runtime.settings.linearServer !== ''
+      ? [runtime.settings.linearServer]
+      : [...new Set([...discovered, ...DEFAULT_LINEAR_SERVERS])]
   const assignee = linear.assignee ?? 'me'
   const base: Record<string, unknown> = {
     limit: 50,
@@ -165,14 +200,7 @@ async function readLinear($: EngineInterface, config: ProjectConfig): Promise<{ 
       const texts: string[] = []
 
       for (const args of calls) {
-        const result = await $.mcp.call(server, 'list_issues', args)
-        const text = result.content.map(block => block.text ?? '').join('')
-
-        if (result.isError) {
-          throw new Error(text.slice(0, 160) || 'error')
-        }
-
-        texts.push(text)
+        texts.push(await listIssues($, server, args))
       }
 
       const seen = new Set<string>()

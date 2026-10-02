@@ -2,7 +2,7 @@ import type { On, SessionStartInput } from 'claude-code'
 import { describe, expect, mock, test, tier } from 'claude-code/testing'
 
 import { asksPerson, budgeted, pickOf, rankPromptOf, stepsOf } from '../hooks/rank'
-import { githubIssuesOf, linearIssuesOf, type WorkItem } from '../hooks/sources'
+import { githubIssuesOf, linearIssuesOf, linearServersOf, type WorkItem } from '../hooks/sources'
 
 tier('user')
 
@@ -164,6 +164,15 @@ describe('parsing', () => {
     expect(prompt).not.toContain('github #12')
   })
 
+  test('the Linear server is found by its tool, whatever the connector is called', async () => {
+    expect(linearServersOf([
+      { name: 'Read', description: 'Reads a file' },
+      { name: 'mcp__9cae8a51-0385__list_issues', description: "List issues in the user's Linear workspace" },
+      { name: 'mcp__github__list_issues', description: 'List issues in a GitHub repository' },
+      { name: 'mcp__claude_ai_Linear__list_issues', description: 'List issues' },
+    ])).toEqual(['9cae8a51-0385', 'claude_ai_Linear'])
+  })
+
   test('picks and questions', async () => {
     expect(pickOf('2', 3)).toBe(1)
     expect(pickOf('4', 3)).toBeNull()
@@ -295,6 +304,17 @@ describe('next up', () => {
 
     expect(answer.text).toContain('Unknown linear setting "colour"')
     expect(w.files[CONFIG]).toBeUndefined()
+  })
+
+  test('a desktop connector named by an id is found and read as the tool the model sees', async ($, on) => {
+    const w = world(on)
+    on('tool.list', () => ({ value: [{ name: 'mcp__9cae8a51__list_issues', description: "List issues in the user's Linear workspace", mcp: true }] }))
+    on('tool.call', { tool: 'mcp__9cae8a51__list_issues' }, () => ({ result: LINEAR, text: LINEAR }))
+    await $.session.start(SESSION)
+    const sources = await $.command.run({ command: 'next', args: 'sources', origin: { kind: 'composer' } })
+
+    expect(sources.text).toContain('Linear: 1 open (9cae8a51)')
+    expect(w.linearArgs).toEqual([])
   })
 
   test('a Linear call that never answers is given up after its time limit', async ($, on) => {

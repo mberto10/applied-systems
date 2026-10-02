@@ -82,7 +82,7 @@ The ranker runs as a separate request with its own budget:
 
 - Claude Code 2.1.287 or later, which added mods. It works in the terminal and in the desktop app's Code tab.
 - For GitHub: the [`gh` CLI](https://cli.github.com/), signed in.
-- For Linear: a connected Linear MCP server, such as the Linear connector on claude.ai, and permission for its `list_issues` tool. The mod reads Linear in the background, where nobody can be asked, so allow the tool once, for example in `/permissions` or under `permissions.allow` in your settings: `mcp__claude_ai_Linear__list_issues`. Without it, the mod shows a reminder once and `/next sources` names the refusal.
+- For Linear: a connected Linear MCP server, such as the Linear connector on claude.ai, and permission for its `list_issues` tool. The mod finds the server by its tool, whatever the connector is called. It reads Linear in the background, where nobody can be asked, so allow the tool once in `/permissions` or under `permissions.allow` in your settings. The name depends on the app: `mcp__claude_ai_Linear__list_issues` in the terminal, `mcp__<connector id>__list_issues` in the desktop app (`/next sources` names the server it found). Without it, the mod shows a reminder once and `/next sources` names the refusal.
 
 ## Install
 
@@ -97,7 +97,7 @@ The ranker runs as a separate request with its own budget:
 |---|---|---|
 | Mode | `mixed` | `mixed`, `linear`, `github` or `conversation`; a project's `.claude/next-up.json` overrides it. |
 | GitHub items | `issues-and-prs` | Open issues and pull requests, or `issues` only. |
-| Linear server | empty | The Linear MCP server's name as `/mcp` lists it. Empty tries `claude.ai Linear`, `Linear` and `linear`. |
+| Linear server | empty | The Linear MCP server's name as `/mcp` lists it. Empty: the server whose `list_issues` tool is Linear's, found in the tool list, then `claude.ai Linear`, `Linear` and `linear`. |
 | Linear project | empty | The default Linear project when a project's file names none. Empty: all your open issues. |
 | Ranker | `light` | `light` or `fork`, see [Context](#context). |
 | Light ranker model | `haiku` | An alias or a full model id. |

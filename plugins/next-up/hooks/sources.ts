@@ -9,6 +9,20 @@ export type WorkItem = {
 
 export const DEFAULT_LINEAR_SERVERS = ['claude.ai Linear', 'Linear', 'linear']
 const CLOSED_LINEAR_STATES = new Set(['completed', 'canceled', 'duplicate'])
+/**
+ * The servers whose `list_issues` tool is Linear's, from the tool list as
+ * the model sees it: `mcp__<server>__list_issues` named or described as
+ * Linear. The desktop app names a connector by an id, the CLI as
+ * `claude.ai Linear` (tool spelling `claude_ai_Linear`), so names alone
+ * cannot be guessed.
+ */
+export function linearServersOf(tools: readonly { name: string; description: string }[]): string[] {
+  return tools
+    .map(tool => ({ tool, match: /^mcp__(.+)__list_issues$/.exec(tool.name) }))
+    .filter(({ tool, match }) => match !== null && /linear/i.test(`${tool.name} ${tool.description}`))
+    .map(({ match }) => match![1]!)
+}
+
 export const LINEAR_FIELDS = ['id', 'title', 'status', 'statusType', 'priority', 'project', 'url']
 
 function parsed(text: string): unknown {
