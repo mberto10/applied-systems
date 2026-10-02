@@ -2,6 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { NextStep } from '../types'
+import { CONFIG_PATH, configOf, OPEN_STATES, summaryOf, withSetting, type ProjectConfig } from './config'
 import { asksPerson, budgeted, digestOf, modeOf, MODES, pickOf, rankPromptOf, stepsOf, type Mode } from './rank'
 import {
   DEFAULT_LINEAR_SERVERS,
@@ -14,14 +15,16 @@ import {
 
 const COMMAND = 'next'
 const ITEMS_TTL_MS = 5 * 60 * 1000
-const MODE_KEY = 'mode'
+const SOURCE_TIMEOUT_MS = 20_000
+const RANKER_TIMEOUT_MS = 30_000
+const MAX_LINEAR_CALLS = 6
 
 const steps = atom({ plugin: 'next-up', key: 'steps' } as const, [])
 const isThinking = atom({ plugin: 'next-up', key: 'isThinking' } as const, false)
 
 type SourceRead = { count: number; note: string }
 
-type Config = {
+type Settings = {
   mode: Mode
   githubItems: string
   linearServer: string
@@ -32,15 +35,16 @@ type Config = {
 }
 
 const runtime: {
-  config: Config
+  settings: Settings
   cache: { items: WorkItem[]; at: number } | null
   linearServer: string | null
   reads: { github: SourceRead; linear: SourceRead } | null
   lastPrompt: string
   generation: number
   isWarned: boolean
+  root: string | null
 } = {
-  config: {
+  settings: {
     mode: 'mixed',
     githubItems: 'issues-and-prs',
     linearServer: '',
@@ -55,28 +59,71 @@ const runtime: {
   lastPrompt: '',
   generation: 0,
   isWarned: false,
+  root: null,
+}
+
+/** Resolves `work`, or `fallback` once `ms` have passed without it. */
+async function within<T>($: EngineInterface, work: Promise<T>, ms: number, fallback: T): Promise<T> {
+  let timer: { cancel: () => void } | null = null
+  const late = new Promise<T>(resolve => {
+    timer = $.clock.after(ms, () => resolve(fallback))
+  })
+
+  try {
+    return await Promise.race([work, late])
+  } finally {
+    timer?.cancel()
+  }
+}
+
+/** The project's config file: `.claude/next-up.json` at the repository's top, else the session's folder. */
+async function configPath($: EngineInterface): Promise<string> {
+  if (runtime.root === null) {
+    const git = await $.process.run(['git', 'rev-parse', '--show-toplevel']).catch(() => null)
+    runtime.root = git !== null && git.exitCode === 0 && git.stdout.trim() !== '' ? git.stdout.trim() : await $.session.cwd()
+  }
+
+  return `${runtime.root}/${CONFIG_PATH}`
+}
+
+/** The project's criteria from `.claude/next-up.json`, the plugin settings filling the gaps. */
+async function projectConfig($: EngineInterface): Promise<ProjectConfig> {
+  const text = await $.fs.read(await configPath($)).catch(() => null)
+  const config = configOf(typeof text === 'string' ? text : null)
+  const { linearProject, githubItems } = runtime.settings
+
+  return {
+    ...config,
+    linear: { ...(linearProject !== '' ? { projects: [linearProject] } : {}), ...config.linear },
+    github: { items: githubItems, ...config.github },
+  }
 }
 
 async function modeNow($: EngineInterface): Promise<Mode> {
-  const stored = await $.store.get(MODE_KEY)
+  const config = await projectConfig($)
 
-  return typeof stored === 'string' ? (modeOf(stored) ?? runtime.config.mode) : runtime.config.mode
+  return modeOf(config.mode ?? '') ?? runtime.settings.mode
 }
 
-async function githubItems($: EngineInterface): Promise<{ items: WorkItem[]; read: SourceRead }> {
+async function readGithub($: EngineInterface, config: ProjectConfig): Promise<{ items: WorkItem[]; read: SourceRead }> {
+  const github = config.github ?? {}
+  const filters = [
+    ...(github.labels ?? []).flatMap(label => ['--label', label]),
+    ...(github.assignee ? ['--assignee', github.assignee] : []),
+  ]
   const issues = await $.process.run([
-    'gh', 'issue', 'list', '--state', 'open', '--limit', '20', '--json', 'number,title,url,labels',
-  ])
+    'gh', 'issue', 'list', '--state', 'open', '--limit', '20', '--json', 'number,title,url,labels', ...filters,
+  ], { timeoutMs: SOURCE_TIMEOUT_MS })
 
   if (issues.exitCode !== 0) {
     return { items: [], read: { count: 0, note: `gh failed: ${issues.stderr.trim().split('\n')[0] ?? 'no output'}` } }
   }
 
-  const pulls = runtime.config.githubItems === 'issues'
+  const pulls = github.items === 'issues'
     ? null
     : await $.process.run([
-      'gh', 'pr', 'list', '--state', 'open', '--limit', '10', '--json', 'number,title,url,isDraft',
-    ])
+      'gh', 'pr', 'list', '--state', 'open', '--limit', '10', '--json', 'number,title,url,isDraft', ...filters,
+    ], { timeoutMs: SOURCE_TIMEOUT_MS })
   const items = [
     ...(pulls !== null && pulls.exitCode === 0 ? githubPullsOf(pulls.stdout) : []),
     ...githubIssuesOf(issues.stdout),
@@ -86,38 +133,52 @@ async function githubItems($: EngineInterface): Promise<{ items: WorkItem[]; rea
 }
 
 /**
- * Reads the person's open Linear issues through a connected Linear MCP
- * server: the one that answered last time, else the configured name, else
- * the usual names in turn. The note says which answered, or why none did.
+ * Reads open Linear issues through a connected Linear MCP server: the one
+ * that answered last time, else the configured name, else the usual names
+ * in turn. One call per project and label named in the criteria (at most
+ * six), merged; the note says which server answered, or why none did.
  */
-async function linearItems($: EngineInterface): Promise<{ items: WorkItem[]; read: SourceRead }> {
-  const { linearServer, linearProject } = runtime.config
+async function readLinear($: EngineInterface, config: ProjectConfig): Promise<{ items: WorkItem[]; read: SourceRead }> {
+  const linear = config.linear ?? {}
   const servers = runtime.linearServer !== null
     ? [runtime.linearServer]
-    : linearServer !== '' ? [linearServer] : DEFAULT_LINEAR_SERVERS
-  const args: Record<string, unknown> = {
-    assignee: 'me',
+    : runtime.settings.linearServer !== '' ? [runtime.settings.linearServer] : DEFAULT_LINEAR_SERVERS
+  const assignee = linear.assignee ?? 'me'
+  const base: Record<string, unknown> = {
     limit: 50,
     orderBy: 'updatedAt',
     fields: LINEAR_FIELDS,
-    ...(linearProject !== '' ? { project: linearProject } : {}),
+    ...(assignee !== 'any' ? { assignee } : {}),
+    ...(linear.team ? { team: linear.team } : {}),
+    ...(linear.query ? { query: linear.query } : {}),
   }
+  const projects = linear.projects?.length ? linear.projects : [null]
+  const labels = linear.labels?.length ? linear.labels : [null]
+  const calls = projects
+    .flatMap(project => labels.map(label => ({ ...base, ...(project ? { project } : {}), ...(label ? { label } : {}) })))
+    .slice(0, MAX_LINEAR_CALLS)
+  const states = linear.states?.length ? linear.states : OPEN_STATES
   const failures: string[] = []
 
   for (const server of servers) {
     try {
-      const result = await $.mcp.call(server, 'list_issues', args)
-      const text = result.content.map(block => block.text ?? '').join('')
+      const texts: string[] = []
 
-      if (result.isError) {
-        failures.push(`${server}: ${text.slice(0, 160) || 'error'}`)
-        continue
+      for (const args of calls) {
+        const result = await $.mcp.call(server, 'list_issues', args)
+        const text = result.content.map(block => block.text ?? '').join('')
+
+        if (result.isError) {
+          throw new Error(text.slice(0, 160) || 'error')
+        }
+
+        texts.push(text)
       }
 
-      const fromText = linearIssuesOf(text)
-      const items = fromText.length > 0 || result.structuredContent === undefined
-        ? fromText
-        : linearIssuesOf(JSON.stringify(result.structuredContent))
+      const seen = new Set<string>()
+      const items = texts
+        .flatMap(text => linearIssuesOf(text, states))
+        .filter(item => !seen.has(item.ref) && seen.add(item.ref) !== undefined)
       runtime.linearServer = server
 
       return { items, read: { count: items.length, note: server } }
@@ -137,14 +198,20 @@ async function workItems($: EngineInterface, mode: Mode, isFresh: boolean): Prom
     return cache.items
   }
 
+  const config = await projectConfig($)
   const off = { items: [], read: { count: 0, note: 'off in this mode' } }
+  const late = { items: [], read: { count: 0, note: `no answer within ${SOURCE_TIMEOUT_MS / 1000}s` } }
   const failed = (error: unknown) => ({
     items: [],
     read: { count: 0, note: error instanceof Error ? error.message.slice(0, 160) : String(error) },
   })
   const [github, linear] = await Promise.all([
-    mode === 'mixed' || mode === 'github' ? githubItems($).catch(failed) : off,
-    mode === 'mixed' || mode === 'linear' ? linearItems($).catch(failed) : off,
+    mode === 'mixed' || mode === 'github'
+      ? within($, readGithub($, config).catch(failed), SOURCE_TIMEOUT_MS, late)
+      : off,
+    mode === 'mixed' || mode === 'linear'
+      ? within($, readLinear($, config).catch(failed), SOURCE_TIMEOUT_MS, late)
+      : off,
   ])
   runtime.reads = { github: github.read, linear: linear.read }
 
@@ -152,6 +219,7 @@ async function workItems($: EngineInterface, mode: Mode, isFresh: boolean): Prom
     runtime.isWarned = true
     $.ui.toast('Next up cannot read Linear: allow its list_issues tool in /permissions, e.g. mcp__claude_ai_Linear__list_issues', { timeoutMs: 10000 })
   }
+
   runtime.cache = { items: [...github.items, ...linear.items], at: now }
 
   return runtime.cache.items
@@ -162,6 +230,8 @@ async function workItems($: EngineInterface, mode: Mode, isFresh: boolean): Prom
  * exchange and the open items, so no transcript is read; the fork ranker
  * asks the session's own model over its cached transcript, and falls back
  * to the light one when that does not answer (for one, a full context).
+ * Nothing waits longer than its time limit, so the band never stays on
+ * "thinking".
  */
 async function propose($: EngineInterface, answer: string, isFresh: boolean): Promise<NextStep[]> {
   const mine = ++runtime.generation
@@ -169,14 +239,21 @@ async function propose($: EngineInterface, answer: string, isFresh: boolean): Pr
 
   try {
     const mode = await modeNow($)
-    const items = mode === 'conversation' ? [] : budgeted(await workItems($, mode, isFresh), runtime.config.perSource)
+    const items = mode === 'conversation' ? [] : budgeted(await workItems($, mode, isFresh), runtime.settings.perSource)
     const lightPrompt = rankPromptOf(items, mode, digestOf(runtime.lastPrompt, answer))
-    let result = runtime.config.ranker === 'fork'
-      ? await $.model.fork({ prompt: rankPromptOf(items, mode, null) })
-      : await $.model.complete({ model: runtime.config.rankerModel, prompt: lightPrompt, maxTokens: 600 })
+    const late = { isAnswered: false as const, reason: 'aborted' as const }
+    const light = () => within(
+      $,
+      $.model.complete({ model: runtime.settings.rankerModel, prompt: lightPrompt, maxTokens: 700 }),
+      RANKER_TIMEOUT_MS,
+      late,
+    )
+    let result = runtime.settings.ranker === 'fork'
+      ? await within($, $.model.fork({ prompt: rankPromptOf(items, mode, null) }), RANKER_TIMEOUT_MS, late)
+      : await light()
 
-    if (!result.isAnswered && runtime.config.ranker === 'fork') {
-      result = await $.model.complete({ model: runtime.config.rankerModel, prompt: lightPrompt, maxTokens: 600 })
+    if (!result.isAnswered && runtime.settings.ranker === 'fork') {
+      result = await light()
     }
 
     const found = result.isAnswered ? stepsOf(result.text, mode) : []
@@ -199,20 +276,41 @@ async function clear($: EngineInterface): Promise<void> {
   await update($, isThinking, () => false)
 }
 
+async function saveSetting($: EngineInterface, section: string, key: string, value: string): Promise<string> {
+  const path = await configPath($)
+  const text = await $.fs.read(path).catch(() => null)
+  const config = configOf(typeof text === 'string' ? text : null)
+  const changed = section === 'mode' ? { ...config, mode: key } : withSetting(config, section, key, value)
+
+  if (typeof changed === 'string') {
+    return changed
+  }
+
+  await $.fs.write(path, `${JSON.stringify(changed, null, 2)}\n`)
+  runtime.cache = null
+
+  return `Saved to ${CONFIG_PATH}. ${summaryOf(await projectConfig($), await modeNow($))}.`
+}
+
+const HELP = '/next refresh · /next sources · /next config · /next mode <mixed|linear|github|conversation> · '
+  + '/next linear <project|team|label|states|assignee|query> <value|off> · /next github <items|label|assignee> <value|off>'
+
 async function commandText($: EngineInterface, args: string): Promise<string> {
-  const [verb = '', value = ''] = args.trim().split(/\s+/)
+  const [verb = '', key = '', ...rest] = args.trim().split(/\s+/)
+  const value = rest.join(' ')
 
   if (verb === 'mode') {
-    const mode = modeOf(value)
+    return modeOf(key) === null
+      ? `Next up mode: ${await modeNow($)}. Modes: ${MODES.join(', ')}.`
+      : saveSetting($, 'mode', key, '')
+  }
 
-    if (mode === null) {
-      return `Next up mode: ${await modeNow($)}. Modes: ${MODES.join(', ')}.`
-    }
+  if (verb === 'linear' || verb === 'github') {
+    return key === '' ? HELP : saveSetting($, verb, key, value)
+  }
 
-    await $.store.set(MODE_KEY, mode)
-    runtime.cache = null
-
-    return `Next up mode: ${mode}.`
+  if (verb === 'config') {
+    return `${CONFIG_PATH}: ${summaryOf(await projectConfig($), await modeNow($))}.`
   }
 
   if (verb === 'sources') {
@@ -232,23 +330,21 @@ async function commandText($: EngineInterface, args: string): Promise<string> {
 
   const shown = await read($, steps)
 
-  return shown.length === 0
-    ? 'Next up: no steps yet. /next refresh, /next mode <mixed|linear|github|conversation>, /next sources.'
-    : `Next up: ${shown.length} step${shown.length === 1 ? '' : 's'} above the prompt.`
+  return shown.length === 0 ? `Next up: no steps yet. ${HELP}` : `Next up: ${shown.length} step${shown.length === 1 ? '' : 's'} above the prompt.`
 }
 
 /**
  * Next up. When a main turn ends with an answer (not a question to the
  * person), up to three next prompts appear above the prompt: continuations
  * of the current work, open GitHub issues and pull requests (gh CLI) or
- * Linear issues (the connected Linear MCP server), as the mode says. Type
- * 1, 2 or 3 and Enter to send one, or click it to edit it first. Nothing is
- * added to the conversation's context except what `/next` prints, which is
- * one short line.
+ * Linear issues (the connected Linear MCP server), as the mode says, under
+ * the project's criteria in `.claude/next-up.json`. Type 1, 2 or 3 and
+ * Enter to send one, or click it to edit it first. Nothing enters the
+ * conversation's context except what `/next` prints, one short line.
  */
 export const register: Register = (on, options) => {
   const perSource = Number(options.perSource ?? 12)
-  runtime.config = {
+  runtime.settings = {
     mode: modeOf(String(options.mode ?? 'mixed')) ?? 'mixed',
     githubItems: String(options.githubItems ?? 'issues-and-prs'),
     linearServer: String(options.linearServer ?? ''),
@@ -259,9 +355,10 @@ export const register: Register = (on, options) => {
   }
 
   on('session.start', async ($, e, next) => {
+    await update($, isThinking, () => false)
     await $.command.register({
       name: COMMAND,
-      description: 'Next up: "refresh", "mode <mixed|linear|github|conversation>", "sources"',
+      description: 'Next up: refresh, sources, config, mode, linear <setting> <value>, github <setting> <value>',
     })
 
     return next(e)
@@ -337,7 +434,7 @@ export const register: Register = (on, options) => {
                 await clear($)
               }}
             />
-            <Text dimColor>{`  ${step.ref ?? step.source}`}</Text>
+            <Text dimColor>{`  ${step.ref ?? step.source}${step.why !== null ? ` · ${step.why}` : ''}`}</Text>
           </Box>
         ))}
         <Button key="dismiss" plain hotkey="0" label="dismiss" onPress={() => clear($)} />

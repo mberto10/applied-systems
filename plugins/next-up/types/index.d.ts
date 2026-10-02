@@ -5,6 +5,7 @@ export type NextStep = {
   prompt: string
   source: NextStepSource
   ref: string | null
+  why: string | null
 }
 
 declare module 'claude-code' {

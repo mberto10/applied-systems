@@ -19,7 +19,36 @@ dismiss
 | `github` | The repository's open issues and pull requests only |
 | `conversation` | The current work only; no source is read |
 
-`/next mode linear` switches the mode and keeps it until you switch again. The band's header shows the current mode.
+`/next mode linear` switches the mode for the current project. The band's header shows the current mode.
+
+## Criteria per project
+
+Each project keeps its own criteria in `.claude/next-up.json` at the repository's top level. Set them with commands, or edit the file:
+
+```text
+/next linear project Website, Docs     only these Linear projects
+/next linear states started,unstarted  only these state types (default: started, unstarted, backlog, triage)
+/next linear team Engineering
+/next linear label bug
+/next linear assignee any              anyone's issues, not only yours (default: me)
+/next linear query onboarding          title or description contains this
+/next github label good first issue
+/next github assignee @me
+/next github items issues              issues only, no pull requests
+/next linear project off               clears a setting
+```
+
+```json
+{
+  "mode": "linear",
+  "linear": { "projects": ["Website"], "states": ["started", "unstarted"] },
+  "github": { "assignee": "@me" }
+}
+```
+
+Whether to commit the file is up to you: committed, the whole team shares the criteria.
+
+**Order.** Linear issues reach the ranker most important first: started before unstarted before backlog, then urgent, high, medium, low, no priority, then the most recently updated. GitHub lists pull requests first, then the newest issues. In `mixed` mode the ranker returns one step of each kind (a continuation, a GitHub item, a Linear item); in `linear` and `github` mode up to three of that source's items, preferring those related to the current work. Each step shows a short reason after its id.
 
 ## How it works
 
@@ -27,7 +56,7 @@ dismiss
    - **GitHub:** open issues and pull requests in the current repository, through the `gh` CLI and your existing login.
    - **Linear:** your open issues, through the Linear MCP server you already have connected. No API key is stored in the plugin.
 
-   The list is cached for five minutes.
+   The list is cached for five minutes. A source that does not answer within 20 seconds is skipped for that turn.
 2. **A ranker picks the steps.** By default a small model (`haiku`) gets the last exchange and the open items, and nothing else.
 3. **The steps appear above the prompt.** Type `1`, `2` or `3` and press Enter to send one as written, or click one to put it in the prompt box and edit it first. `0` dismisses them; any other prompt clears them.
 
@@ -35,7 +64,9 @@ dismiss
 |---|---|
 | `/next` | Says how many steps are showing |
 | `/next refresh` | Reads the sources again and picks new steps |
-| `/next mode <name>` | Switches the mode |
+| `/next mode <name>` | Switches the mode for this project |
+| `/next linear <setting> <value>` / `/next github <setting> <value>` | Sets a criterion, see [Criteria per project](#criteria-per-project) |
+| `/next config` | Shows the criteria in force |
 | `/next sources` | Shows how many open items each source returned, or why it returned none |
 
 ## Context
@@ -64,10 +95,10 @@ The ranker runs as a separate request with its own budget:
 
 | Setting | Default | What it does |
 |---|---|---|
-| Mode | `mixed` | `mixed`, `linear`, `github` or `conversation`; `/next mode` overrides it. |
+| Mode | `mixed` | `mixed`, `linear`, `github` or `conversation`; a project's `.claude/next-up.json` overrides it. |
 | GitHub items | `issues-and-prs` | Open issues and pull requests, or `issues` only. |
 | Linear server | empty | The Linear MCP server's name as `/mcp` lists it. Empty tries `claude.ai Linear`, `Linear` and `linear`. |
-| Linear project | empty | Only issues in this project. Empty: all your open issues. |
+| Linear project | empty | The default Linear project when a project's file names none. Empty: all your open issues. |
 | Ranker | `light` | `light` or `fork`, see [Context](#context). |
 | Light ranker model | `haiku` | An alias or a full model id. |
 | Items per source | `12` | At most this many open items per source reach the ranker (up to 50). |

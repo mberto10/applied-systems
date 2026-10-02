@@ -25,6 +25,7 @@ const ANSWER = JSON.stringify([
   { label: 'Review the onboarding copy', prompt: 'Review the onboarding copy for ENG-42.', source: 'linear', ref: 'ENG-42' },
   { label: 'Tidy the diff', prompt: 'Tidy up the diff you just made.', source: 'continue', ref: null },
 ])
+const CONFIG = '/work/.claude/next-up.json'
 const USAGE = { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 }
 
 const BAND = {
@@ -34,7 +35,9 @@ const BAND = {
   props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 100, scroll: { offset: 0, bodyRows: 10 }, view: {} },
 } as const
 
-function world(on: On, linear: 'answers' | 'refuses' = 'answers') {
+function world(on: On, linear: 'answers' | 'refuses' | 'hangs' = 'answers', initialFiles: Record<string, string> = {}) {
+  const files: Record<string, string> = { ...initialFiles }
+  const linearArgs: Record<string, unknown>[] = []
   const prompts: string[] = []
   const fills: string[] = []
   const completes: { model: string; prompt: string }[] = []
@@ -53,11 +56,29 @@ function world(on: On, linear: 'answers' | 'refuses' = 'answers') {
     return { value: undefined }
   })
   on('process.run', ($, e) => {
+    if (e.argv[0] === 'git') {
+      return { value: { exitCode: 0, stdout: '/work\n', stderr: '' } }
+    }
+
     commands.push(e.argv.slice(0, 3).join(' '))
 
     return { value: { exitCode: 0, stdout: e.argv[1] === 'issue' ? GH_ISSUES : GH_PULLS, stderr: '' } }
   })
+  on('fs.read', ($, e) => (files[e.path] === undefined ? { deny: `ENOENT: ${e.path}` } : { value: files[e.path] }))
+  on('fs.write', ($, e) => {
+    files[e.path] = e.text
+
+    return { value: undefined }
+  })
   on('mcp.call', ($, e) => {
+    if (e.server === 'claude.ai Linear') {
+      linearArgs.push(e.args)
+    }
+
+    if (linear === 'hangs' && e.server === 'claude.ai Linear') {
+      return new Promise(() => {})
+    }
+
     if (e.server !== 'claude.ai Linear') {
       return { deny: `no connected MCP tool "list_issues" on a server named "${e.server}"` }
     }
@@ -94,14 +115,22 @@ function world(on: On, linear: 'answers' | 'refuses' = 'answers') {
   })
   on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Text', children: ['(engine band)'] }))
 
-  return { prompts, fills, completes, forks, commands, toasts, clock }
+  return { prompts, fills, completes, forks, commands, toasts, clock, files, linearArgs }
 }
 
 const answered = (answer: string) => ({ answer, durationMs: 1, isAborted: false, turnId: 't1', reason: 'answer' as const })
 
 describe('parsing', () => {
-  test('closed Linear issues are left out', async () => {
+  test('closed Linear issues are left out; open ones rank by state, then priority', async () => {
     expect(linearIssuesOf(LINEAR).map(item => item.ref)).toEqual(['ENG-42'])
+    const mixed = JSON.stringify({ issues: [
+      { id: 'A', title: 'backlog urgent', statusType: 'backlog', priority: { value: 1, name: 'Urgent' } },
+      { id: 'B', title: 'started none', statusType: 'started', priority: { value: 0, name: 'No priority' } },
+      { id: 'C', title: 'started high', statusType: 'started', priority: { value: 2, name: 'High' } },
+      { id: 'D', title: 'unstarted low', statusType: 'unstarted', priority: { value: 4, name: 'Low' } },
+    ] })
+    expect(linearIssuesOf(mixed).map(item => item.ref)).toEqual(['C', 'B', 'D', 'A'])
+    expect(linearIssuesOf(mixed, ['started']).map(item => item.ref)).toEqual(['C', 'B'])
     expect(githubIssuesOf(GH_ISSUES)[0]?.detail).toBe('issue, bug')
   })
 
@@ -174,7 +203,8 @@ describe('next up', () => {
 
     const changed = await $.command.run({ command: 'next', args: 'mode linear', origin: { kind: 'composer' } })
 
-    expect(changed.text).toBe('Next up mode: linear.')
+    expect(changed.text).toContain('Saved to .claude/next-up.json')
+    expect(JSON.parse(w.files[CONFIG]!).mode).toBe('linear')
 
     await $.turn.complete(answered('Done.'))
     await w.clock.settle()
@@ -236,5 +266,43 @@ describe('next up', () => {
     await $.prompt.submit({ text: '1' })
 
     expect(w.prompts).toEqual(['1'])
+  })
+
+  test('/next linear project and states go into the project file and into the Linear call', async ($, on) => {
+    const w = world(on)
+    await $.session.start(SESSION)
+    await $.command.run({ command: 'next', args: 'linear project Website, Docs', origin: { kind: 'composer' } })
+    const saved = await $.command.run({ command: 'next', args: 'linear states started,unstarted', origin: { kind: 'composer' } })
+
+    expect(saved.text).toContain('projects Website, Docs')
+    expect(saved.text).toContain('states started, unstarted')
+    expect(JSON.parse(w.files[CONFIG]!)).toEqual({ linear: { projects: ['Website', 'Docs'], states: ['started', 'unstarted'] } })
+
+    await $.command.run({ command: 'next', args: 'sources', origin: { kind: 'composer' } })
+
+    expect(w.linearArgs.map(args => args.project)).toEqual(['Website', 'Docs'])
+    expect(w.linearArgs[0]?.assignee).toBe('me')
+
+    const cleared = await $.command.run({ command: 'next', args: 'linear project off', origin: { kind: 'composer' } })
+
+    expect(cleared.text).toContain('Linear: all projects')
+  })
+
+  test('an unknown setting is explained, not saved', async ($, on) => {
+    const w = world(on)
+    await $.session.start(SESSION)
+    const answer = await $.command.run({ command: 'next', args: 'linear colour blue', origin: { kind: 'composer' } })
+
+    expect(answer.text).toContain('Unknown linear setting "colour"')
+    expect(w.files[CONFIG]).toBeUndefined()
+  })
+
+  test('a Linear call that never answers is given up after its time limit', async ($, on) => {
+    const w = world(on, 'hangs')
+    await $.session.start(SESSION)
+    const sources = $.command.run({ command: 'next', args: 'sources', origin: { kind: 'composer' } })
+    await w.clock.advance(20_000)
+
+    expect((await sources).text).toContain('Linear: 0 open (no answer within 20s)')
   })
 })

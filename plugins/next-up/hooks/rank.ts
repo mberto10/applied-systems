@@ -62,10 +62,10 @@ export function digestOf(prompt: string, answer: string): string {
 }
 
 const GOALS: Record<Mode, string> = {
-  mixed: 'Pick up to three next steps from: (1) a natural continuation of what was just done, (2) open work items related to the current work, (3) urgent or high-priority items.',
-  linear: 'Pick up to three next steps, each one of the Linear items below: those related to the current work first, then urgent or high-priority ones. Do not suggest anything that is not one of these items.',
-  github: 'Pick up to three next steps, each one of the GitHub items below: those related to the current work first, then the most pressing. Do not suggest anything that is not one of these items.',
-  conversation: 'Pick up to three natural continuations of what was just done.',
+  mixed: 'Return one step of each kind that has something to offer: one natural continuation of what was just done, one GitHub item and one Linear item. For each source, prefer the item most related to the current work; otherwise take the first, most important one.',
+  linear: 'Return up to three Linear items. Prefer items related to the current work; otherwise keep the given order, which lists the most important first. Do not suggest anything that is not one of these items.',
+  github: 'Return up to three GitHub items. Prefer items related to the current work; otherwise keep the given order, which lists pull requests first, then the newest issues. Do not suggest anything that is not one of these items.',
+  conversation: 'Return up to three natural continuations of what was just done.',
 }
 
 /**
@@ -86,7 +86,7 @@ export function rankPromptOf(items: readonly WorkItem[], mode: Mode, digest: str
     ...(mode === 'conversation' ? [] : ['', 'Open work items:', list]),
     '',
     'Answer with JSON only, no prose:',
-    `[{"label": "<at most 60 characters>", "prompt": "<the prompt>", "source": ${allowed.map(one => `"${one}"`).join(' | ')}, "ref": "<item id, or null>"}]`,
+    `[{"label": "<at most 60 characters>", "prompt": "<the prompt>", "source": ${allowed.map(one => `"${one}"`).join(' | ')}, "ref": "<item id, or null>", "why": "<why this one, at most 8 words>"}]`,
   ].join('\n')
 }
 
@@ -119,7 +119,7 @@ export function stepsOf(text: string, mode: Mode = 'mixed'): NextStep[] {
       continue
     }
 
-    const { label, prompt, source, ref } = one as Record<string, unknown>
+    const { label, prompt, source, ref, why } = one as Record<string, unknown>
 
     if (typeof label !== 'string' || typeof prompt !== 'string' || label.trim() === '' || prompt.trim() === '') {
       continue
@@ -139,6 +139,7 @@ export function stepsOf(text: string, mode: Mode = 'mixed'): NextStep[] {
       prompt: prompt.trim(),
       source: kind,
       ref: typeof ref === 'string' && ref.trim() !== '' ? ref.trim() : null,
+      why: typeof why === 'string' && why.trim() !== '' ? clipped(why, 70) : null,
     })
   }
 
