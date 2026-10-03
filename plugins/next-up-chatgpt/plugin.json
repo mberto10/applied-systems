@@ -1,0 +1,28 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "next-up-chatgpt",
+  "version": "0.4.1",
+  "description": "Shared work plans with acceptance criteria, evidence and progress tools, alongside Markdown and issue snapshots.",
+  "author": {
+    "name": "Maximilian Bruhn"
+  },
+  "license": "MIT",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Next up for ChatGPT",
+        "shortDescription": "Your work, in view",
+        "longDescription": "Keep a goal, steps and acceptance criteria beside your conversation. Record agent evidence and progress, edit the plan, and inspect changes. Browse imported Markdown or verified Linear/GitHub snapshots separately. Requires a private single-user MCP server; native panel placement depends on the host.",
+        "developerName": "Maximilian Bruhn",
+        "category": "Productivity",
+        "capabilities": [],
+        "composerIcon": "./assets/icon.svg",
+        "logo": "./assets/icon.svg",
+        "defaultPrompt": [
+          "Open my Next up work panel.",
+          "Create a shared work plan with steps and acceptance criteria for this task."
+        ]
+      }
+    }
+  }
+}
