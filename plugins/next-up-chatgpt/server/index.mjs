@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createMcpServer } from './app.mjs';
 
-export function createHttpServer({ preview = false, allowedHosts = ['127.0.0.1', 'localhost', '[::1]'] } = {}) {
+export function createHttpServer({ preview = false, store, allowedHosts = ['127.0.0.1', 'localhost', '[::1]'] } = {}) {
   return createServer(async (req, res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Cache-Control', 'no-store');
@@ -16,9 +16,9 @@ export function createHttpServer({ preview = false, allowedHosts = ['127.0.0.1',
     }
     const path = (req.url ?? '/').split('?')[0];
     if (req.method === 'GET' && path === '/healthz') {
-      res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ status: 'ok', name: 'next-up-chatgpt', version: '0.1.0' })); return;
+      res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ status: 'ok', name: 'next-up-chatgpt', version: '0.4.1' })); return;
     }
-    const previewFiles = { '/': ['preview.html', 'text/html'], '/preview.js': ['preview.js', 'text/javascript'], '/card': ['card.html', 'text/html'] };
+    const previewFiles = { '/': ['preview.html', 'text/html'], '/preview.js': ['preview.js', 'text/javascript'], '/card': ['card.html', 'text/html'], '/panel': ['panel.html', 'text/html'] };
     if (preview && req.method === 'GET' && previewFiles[path]) {
       const [file, type] = previewFiles[path];
       try { res.writeHead(200, { 'Content-Type': `${type}; charset=utf-8` }).end(await readFile(new URL(`../dist/${file}`, import.meta.url))); }
@@ -40,7 +40,7 @@ export function createHttpServer({ preview = false, allowedHosts = ['127.0.0.1',
       let body;
       try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
       catch { res.writeHead(400, { 'Content-Type': 'application/json' }).end(JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } })); return; }
-      server = await createMcpServer();
+      server = await createMcpServer({ store });
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
       res.on('close', () => { void server.close(); });
       await server.connect(transport);
@@ -57,7 +57,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const port = Number(process.env.PORT ?? 3038);
   const host = process.env.HOST ?? '127.0.0.1';
   const preview = process.argv.includes('--preview');
-  if (preview && !['127.0.0.1', 'localhost', '::1'].includes(host)) throw new Error('Preview must bind to loopback.');
+  if (!['127.0.0.1', 'localhost', '::1'].includes(host)) throw new Error('Workboards contain private data. This single-user server must bind to loopback; use an authenticated private tunnel.');
   const allowedHosts = ['127.0.0.1', 'localhost', '[::1]', ...(process.env.MCP_ALLOWED_HOSTS ?? '').split(',').filter(Boolean)];
   const server = createHttpServer({ preview, allowedHosts });
   server.listen(port, host, () => console.log(`Next up: http://${host}:${port}${preview ? '/' : '/mcp'}`));

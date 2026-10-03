@@ -10,6 +10,7 @@ It is also a plugin marketplace for **Claude Code** and **Codex**.
 |---|---|---|
 | [Attention Diet](plugins/attention-diet/) | One attention contract for the sources you choose, such as the newsletters and alerts in your inbox, and one short briefing that ends. Read-only by design, with explicit limits and memory of what you already saw. | 0.6.0 |
 | [Next up](plugins/next-up/) | A Claude Code mod: when a turn ends, up to three next prompts above the prompt box, from the conversation, GitHub or Linear, or all of them. Claude Code only. | 0.1.1 |
+| [Next up for ChatGPT](plugins/next-up-chatgpt/) | Shared work plans with acceptance criteria and agent progress tools, plus Markdown/Linear/GitHub source snapshots. Requires a private MCP server. | 0.4.1 |
 
 ## Install
 
@@ -26,9 +27,10 @@ It is also a plugin marketplace for **Claude Code** and **Codex**.
 ```sh
 codex plugin marketplace add mberto10/applied-systems
 codex plugin add attention-diet@applied-systems
+codex plugin add next-up-chatgpt@applied-systems
 ```
 
-Codex lists Attention Diet only: Next up is a Claude Code mod and needs Claude Code 2.1.287 or later.
+Next up for ChatGPT is a separate plugin from the Claude Code mod. Its [setup and update guide](plugins/next-up-chatgpt/README.md#update-an-existing-installation) covers the required local MCP server and refreshing the connected tools. Native panel placement in Codex remains to be verified. The original Next up mod requires Claude Code 2.1.287 or later.
 
 Start a new session afterwards so the skills load. Each plugin's README covers its own requirements; Attention Diet needs Python 3.10 or later and a supported browser or connector for each source.
 

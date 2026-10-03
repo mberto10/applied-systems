@@ -1,9 +1,11 @@
+import { registerPanelTools } from './panel-tools.mjs';
 import { readFile } from 'node:fs/promises';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server';
 import { z } from 'zod';
 
-export const RESOURCE_URI = 'ui://next-up/0.1.0/card.html';
+export { PANEL_URI } from './panel-tools.mjs';
+export const RESOURCE_URI = 'ui://next-up/0.2.0/card.html';
 const issue = z.object({
   identifier: z.string().trim().regex(/^[A-Z][A-Z0-9]*-\d+$/),
   url: z.url().refine(value => {
@@ -24,9 +26,9 @@ export const inputSchema = z.object({
   ),
 });
 
-export async function createMcpServer() {
+export async function createMcpServer({ store } = {}) {
   const html = await readFile(new URL('../dist/card.html', import.meta.url), 'utf8');
-  const server = new McpServer({ name: 'next-up-chatgpt', version: '0.1.0' }, {
+  const server = new McpServer({ name: 'next-up-chatgpt', version: '0.4.1' }, {
     instructions: 'Next up displays optional continuation prompts. Generate suggestions from current conversation context; use verified Linear data only when available. Rendering does not execute a step. Only the user selects a continuation.',
   });
   registerAppResource(server, 'next-up-card', RESOURCE_URI, {}, async () => ({
@@ -56,5 +58,6 @@ export async function createMcpServer() {
     structuredContent: data,
     content: [{ type: 'text', text: data.steps.map((step, i) => `${i + 1}. ${step.label}${step.issue ? ` (${step.issue.identifier})` : ''} — ${step.reason}\nPrompt: ${step.prompt}`).join('\n\n') }],
   }));
+  await registerPanelTools(server, stepSchema, store);
   return server;
 }

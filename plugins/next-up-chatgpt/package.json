@@ -1,24 +1,25 @@
 {
   "name": "next-up-chatgpt",
-  "version": "0.1.0",
+  "version": "0.4.1",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "build": "node scripts/build.mjs",
     "start": "node server/index.mjs",
     "preview": "node server/index.mjs --preview",
-    "test": "npm run build && node --test tests/server.test.mjs",
-    "test:ui": "playwright test",
-    "check": "npm test && npm run test:ui"
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "check": "npm test"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "2.0.3",
     "@modelcontextprotocol/sdk": "1.31.0",
+    "marked": "^17.0.1",
     "zod": "^4.2.0"
   },
   "devDependencies": {
-    "@playwright/test": "1.63.0",
     "esbuild": "0.28.2"
   }
 }
