@@ -20,6 +20,15 @@
       "author": {"name": "Maximilian Bruhn"},
       "category": "productivity",
       "keywords": ["mod", "next-steps", "github", "linear", "prompts"]
+    },
+    {
+      "name": "linear-tree",
+      "source": "./plugins/linear-tree",
+      "description": "A Claude Code mod: a Linear project as a tree and a flowchart in a side pane, with progress, search, shortcuts and markers on the issues agents are working on.",
+      "version": "0.1.0",
+      "author": {"name": "Maximilian Bruhn"},
+      "category": "productivity",
+      "keywords": ["mod", "linear", "tree", "flowchart", "pane"]
     }
   ]
 }
