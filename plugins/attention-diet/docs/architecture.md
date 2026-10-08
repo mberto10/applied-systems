@@ -5,14 +5,14 @@ The **attention filter** decides which observed content deserves the user's atte
 | Component | Responsibility |
 |---|---|
 | Attention contract | What matters: interests, sources, exclusions, source procedures, limits and presentation |
-| Source access | How the agent reaches a source: an isolated browser or an explicitly connected tool |
+| Source access | How the agent reaches a source: an isolated browser, an explicitly connected tool, or a public feed read by the bundled feed helper |
 | Runtime | Time, inspection counts, stopping evidence, novelty comparison, validation, rendering, saving |
 | Briefing memory | Which item versions were already brought to attention |
 
 ```mermaid
 flowchart TD
   C[Attention contract] --> F[Attention filter: agent judgment]
-  A[Source access: browser or connector] --> F
+  A[Source access: browser, connector or feed] --> F
   R[Runtime: time, counts, novelty] --> F
   M[Briefing memory] -->|Previously included versions| R
   F --> S[Selection]
@@ -35,13 +35,13 @@ The limit of this split is stated wherever it matters: helpers validate what the
 
 ## Attention contract
 
-The user owns the contract. It defines the sources to inspect, what makes an item relevant, what to exclude, how much work a run may do, where memory is stored and how the result is presented. `setup` creates it and `tune` revises it through focused changes. An explicit request to apply a precise lasting change is authorization; proposal-only requests and unresolved choices wait for the user. Earlier revisions are kept. Preferences change only this way, never by inference from what the user clicked or ignored. The shared contract helper prepares a validated patch against a known base and applies it with a stale-base check, revision archive, changelog entry and proposal cleanup. Setup starts from the bundled template; tuning never rewrites the whole contract through the model.
+The user owns the contract. It defines the sources to inspect, what makes an item relevant, what to exclude, how much work a run may do, where memory is stored and how the result is presented. `setup` creates it, `tune` revises it through focused changes, and `view-contract` renders it as one readable page without changing it. An explicit request to apply a precise lasting change is authorization; proposal-only requests and unresolved choices wait for the user. Earlier revisions are kept. Preferences change only this way, never by inference from what the user clicked or ignored. The shared contract helper prepares a validated patch against a known base and applies it with a stale-base check, revision archive, changelog entry and proposal cleanup. Setup starts from the bundled template; tuning never rewrites the whole contract through the model.
 
 Every coverage thread has an opaque service key, its surfaces, an `access` object, selection rules and a `procedure` describing navigation or retrieval, account identity, read-state effects, item identity and pagination. No code or skill dispatches on a service name, so a new source is a contract edit and needs no change to the plugin. See the [contract guide](contract-guide.md).
 
 ## Source access
 
-Each thread selects `access.type`. Browser access names a provider and requires a task-owned tab in an isolated environment with its own sign-in. Connector access binds an exact tool namespace and optional connection reference. An unavailable route makes its surfaces unavailable; nothing falls back. These are agent-operated procedures, not bundled drivers or API clients: the schema validates the choice, while tool availability, account identity and action effects are established at run time. The [run skill](../skills/attention-diet/SKILL.md) holds the shared rules and each provider has one guide under [integrations](../integrations/README.md).
+Each thread selects `access.type`. Browser access names a provider and requires a task-owned tab in an isolated environment with its own sign-in. Connector access binds an exact tool namespace and optional connection reference. Feed access names one public RSS or Atom URL per surface; the bundled `feed.py` reads it within a window's limit and returns entries with a fixed comparison basis, the one route where a helper touches the network. An unavailable route makes its surfaces unavailable; nothing falls back. Browser and connector routes are agent-operated procedures, not bundled drivers or API clients: the schema validates the choice, while tool availability, account identity and action effects are established at run time. The [run skill](../skills/attention-diet/SKILL.md) holds the shared rules and each provider has one guide under [integrations](../integrations/README.md).
 
 ## Runtime
 

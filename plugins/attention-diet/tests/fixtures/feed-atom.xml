@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
+  <title>An Example Channel</title>
+  <link rel="alternate" href="https://video.example.org/channel/example"/>
+  <author><name>Example Channel</name></author>
+  <entry>
+    <id>video:abc123</id>
+    <title>How the method works in practice</title>
+    <link rel="alternate" href="https://video.example.org/watch?v=abc123"/>
+    <published>2026-09-28T16:00:00Z</published>
+    <media:group><media:description>A walk-through of the method.</media:description></media:group>
+  </entry>
+  <entry>
+    <id>video:def456</id>
+    <title>An older video</title>
+    <link rel="alternate" href="https://video.example.org/watch?v=def456"/>
+    <author><name>Guest Author</name></author>
+    <updated>2026-09-20T10:00:00+02:00</updated>
+    <summary type="html">&lt;i&gt;Summary&lt;/i&gt; text.</summary>
+  </entry>
+</feed>

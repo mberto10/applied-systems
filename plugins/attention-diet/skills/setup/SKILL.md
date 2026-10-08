@@ -22,7 +22,7 @@ Read only [describing a source](../../docs/contract-guide.md#describing-a-source
 
 Use source documentation or previously established observations. Put live checks for account identity, navigation and read-state effects in the procedure as conditions to verify before dependent reads on the first run; do not claim setup verified a live interface. Unknown entry URLs, unavailable tool capabilities or an unspecified retrieval scope are gaps to resolve, never guesses.
 
-Load only the requested branch: [connector configuration](../../integrations/connectors.md) for connectors, [Supermemory setup](../../integrations/memory/supermemory-setup.md) for that memory provider, or [specialized changes](../tune/references/specialized-changes.md) for other output, parallelism or surprise settings. Local memory needs no provider guide. Keep isolation, read-only access and no fallback; never retain credentials or placeholder instructions.
+Load only the requested branch: [connector configuration](../../integrations/connectors.md) for connectors, [feeds](../../integrations/feeds.md) for RSS or Atom feeds, [Supermemory setup](../../integrations/memory/supermemory-setup.md) for that memory provider, or [specialized changes](../tune/references/specialized-changes.md) for other output, parallelism or surprise settings. Local memory needs no provider guide. Keep isolation, read-only access and no fallback; never retain credentials or placeholder instructions.
 
 ## Prepare and install
 
@@ -38,4 +38,4 @@ This is the input shape, not a complete setup: also replace the template's place
 
 Inspect the returned changes against the request. If creating this contract is already authorized and no substantive choice is unresolved, run `PYTHON SCRIPTS/contract.py apply --proposal TOKEN`, adding `--default` for the first diet or when requested. For a proposal-only request, show the choices and await approval before applying. `apply` rechecks validity, refuses an existing contract that appeared meanwhile, writes the changelog and removes the proposal. `discard --proposal TOKEN` removes a declined proposal.
 
-Return the installed path and a short description of the configured scope and defaults. Mention any unresolved limitation. Start a briefing only if the user asked for it.
+Prefer a feed for writers, newsletters, channels and podcasts that publish one; it needs no browser or sign-in. Return the installed path and a short description of the configured scope and defaults. Mention any unresolved limitation. Start a briefing only if the user asked for it.

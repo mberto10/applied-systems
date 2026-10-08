@@ -4,7 +4,7 @@ Run with Claude Code's `claude plugin eval` from the plugin root, in your own te
 
 | Tag | Cases | Checks | Needs |
 |---|---|---|---|
-| `routing` | 4 | ordinary phrasing reaches check, setup or tune; unrelated requests trigger nothing | nothing |
+| `routing` | 5 | ordinary phrasing reaches check, setup, tune or view-contract; unrelated requests trigger nothing | nothing |
 | `guardrails` | 2 | no replies or account actions; no learning from clicks | judge model |
 | `functional` | 7 | real helpers: tune applies one revision, lists diets without changing them and puts an all-source exclusion in `intent.excluded`; a one-off stays one-off; setup and the run report a missing browser instead of switching route or inventing items; smoke check | `--scaffold --allow-tools Bash` |
 

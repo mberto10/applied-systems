@@ -1,10 +1,19 @@
 # Changelog
 
-Contracts stay on `attention-diet-contract/1.3` and memory records on `attention-summary/1.0` throughout; no migration is needed.
+Contracts stay on `attention-diet-contract/1.3` and memory records on `attention-summary/1.0` throughout; no migration is needed. 0.7 adds an optional access type, so a contract that uses `feed` needs 0.7 or later.
 
-## Unreleased
+## 0.7.0 · Unreleased
 
-Documentation only; no change to skills, helpers or schemas.
+**Feeds**
+- New `feed` access type: a surface reads an RSS 2.0, RSS 1.0 or Atom feed named in `feed_urls`, with no browser, sign-in or host tool. Writers, newsletters, video channels, podcasts, preprint servers and many public institutions publish feeds.
+- `scripts/feed.py fetch` takes the URL from the contract, reads at most 5 MB over plain https, refuses redirects away from https and documents that declare entities, and returns at most the window's number of unseen entries with a fixed-length plain-text basis, so an unchanged entry compares equal across runs.
+- Feed threads must be marked `public_posts`; the run plan routes them to [integrations/feeds.md](integrations/feeds.md) with the account key `feed:public`.
+- New example, `examples/feeds-contract.json`: writers, channels and podcasts you follow.
+
+**Viewing a contract**
+- New `view-contract` skill and `scripts/contract_view.py render`: one offline page showing what counts, what is left out, where the agent looks, when a check stops, surprises, what is remembered, what never happens, and the revision history from the changelog, with the exact contract folded at the end. Read-only.
+
+**Earlier documentation changes**
 
 - README leads with the attention contract, the finite check and your own view; examples are inbox newsletters and alerts, GitHub releases and selected accounts on an open network.
 - The terms caution moves up: most platforms built around a feed prohibit automated access, so connectors, APIs and email alerts come first.
