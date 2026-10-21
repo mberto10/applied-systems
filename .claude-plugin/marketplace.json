@@ -1,7 +1,7 @@
 {
-  "name": "applied-systems",
+  "name": "applied-attention",
   "owner": {"name": "Maximilian Bruhn"},
-  "metadata": {"description": "Plugins from the Applied Attention publication."},
+  "metadata": {"description": "Small Claude Code tools from Applied Attention, each shown in a short video."},
   "plugins": [
     {
       "name": "attention-diet",

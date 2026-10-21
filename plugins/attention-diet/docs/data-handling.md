@@ -1,6 +1,6 @@
 # Data handling
 
-This describes the local implementation. Attention Diet has no hosted component: the publisher runs no service and receives no data from the plugin. Questions and problems: [open an issue](https://github.com/mberto10/applied-systems/issues).
+This describes the local implementation. Attention Diet has no hosted component: the publisher runs no service and receives no data from the plugin. Questions and problems: [open an issue](https://github.com/mberto10/applied-attention/issues).
 
 ## What is stored
 

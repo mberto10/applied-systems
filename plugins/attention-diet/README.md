@@ -37,15 +37,15 @@ Use Markdown in the conversation, a local HTML list or a card grid. A check can 
 **Claude Code** (desktop app for the built-in Browser pane):
 
 ```text
-/plugin marketplace add mberto10/applied-systems
-/plugin install attention-diet@applied-systems
+/plugin marketplace add mberto10/applied-attention
+/plugin install attention-diet@applied-attention
 ```
 
 **Codex** (app, for the in-app browser):
 
 ```sh
-codex plugin marketplace add mberto10/applied-systems
-codex plugin add attention-diet@applied-systems
+codex plugin marketplace add mberto10/applied-attention
+codex plugin add attention-diet@applied-attention
 ```
 
 Browser sources need the Claude Code desktop app (Browser pane) or the Codex app (in-app browser). In a terminal-only session, choose the agent-browser CLI or a connector during setup.
@@ -138,7 +138,7 @@ This saves time only where the host really runs the collectors and their browser
 - [Evals](evals/README.md): behaviour tests with `claude plugin eval`.
 - [Changelog](CHANGELOG.md).
 
-Written alongside the [Applied Attention](https://appliedattention.substack.com/) article on Attention Diet. Issues and questions: [github.com/mberto10/applied-systems/issues](https://github.com/mberto10/applied-systems/issues).
+Written alongside the [Applied Attention](https://appliedattention.substack.com/) article on Attention Diet. Issues and questions: [github.com/mberto10/applied-attention/issues](https://github.com/mberto10/applied-attention/issues).
 
 ## Licence
 

@@ -1,8 +1,6 @@
-# Applied Systems
+# Applied Attention
 
-Working systems from [Applied Attention](https://appliedattention.substack.com/), packaged so you can install, inspect and adapt them. The articles explain the reasoning; this repository holds the code.
-
-It is also a plugin marketplace for **Claude Code** and **Codex**.
+Small tools for Claude Code and Codex, each one built in the open and shown in a short video. Every tool installs from this one marketplace, so the install line is always the same.
 
 ## Plugins
 
@@ -18,18 +16,18 @@ It is also a plugin marketplace for **Claude Code** and **Codex**.
 **Claude Code**
 
 ```text
-/plugin marketplace add mberto10/applied-systems
-/plugin install attention-diet@applied-systems
-/plugin install next-up@applied-systems
-/plugin install linear-tree@applied-systems
+/plugin marketplace add mberto10/applied-attention
+/plugin install attention-diet@applied-attention
+/plugin install next-up@applied-attention
+/plugin install linear-tree@applied-attention
 ```
 
 **Codex**
 
 ```sh
-codex plugin marketplace add mberto10/applied-systems
-codex plugin add attention-diet@applied-systems
-codex plugin add next-up-chatgpt@applied-systems
+codex plugin marketplace add mberto10/applied-attention
+codex plugin add attention-diet@applied-attention
+codex plugin add next-up-chatgpt@applied-attention
 ```
 
 Next up for ChatGPT is a separate plugin from the Claude Code mod. Its [setup and update guide](plugins/next-up-chatgpt/README.md#update-an-existing-installation) covers the required local MCP server and refreshing the connected tools. Native panel placement in Codex remains to be verified. The Next up and Linear tree mods require Claude Code 2.1.287 or later.
@@ -44,7 +42,7 @@ plugins/<name>/                    one folder per plugin, with its own README, C
 .agents/plugins/marketplace.json   marketplace for Codex
 ```
 
-Releases are tagged per plugin, for example `attention-diet-v0.6.0`. Questions and problems: [open an issue](https://github.com/mberto10/applied-systems/issues).
+Releases are tagged per plugin, for example `attention-diet-v0.6.0`. Questions and problems: [open an issue](https://github.com/mberto10/applied-attention/issues).
 
 ## License
 

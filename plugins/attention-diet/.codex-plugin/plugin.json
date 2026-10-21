@@ -18,9 +18,9 @@
       "Use Attention Diet to check my sources once.",
       "Use Attention Diet to show me fewer promotional posts."
     ],
-    "websiteURL": "https://github.com/mberto10/applied-systems/tree/main/plugins/attention-diet",
-    "supportURL": "https://github.com/mberto10/applied-systems/issues",
-    "privacyPolicyURL": "https://github.com/mberto10/applied-systems/blob/main/plugins/attention-diet/docs/data-handling.md"
+    "websiteURL": "https://github.com/mberto10/applied-attention/tree/main/plugins/attention-diet",
+    "supportURL": "https://github.com/mberto10/applied-attention/issues",
+    "privacyPolicyURL": "https://github.com/mberto10/applied-attention/blob/main/plugins/attention-diet/docs/data-handling.md"
   },
   "keywords": [
     "attention",

@@ -12,8 +12,8 @@
     "linear",
     "prompts"
   ],
-  "homepage": "https://github.com/mberto10/applied-systems/tree/main/plugins/next-up",
-  "repository": "https://github.com/mberto10/applied-systems",
+  "homepage": "https://github.com/mberto10/applied-attention/tree/main/plugins/next-up",
+  "repository": "https://github.com/mberto10/applied-attention",
   "license": "MIT",
   "types": "./types/index.d.ts",
   "userConfig": {

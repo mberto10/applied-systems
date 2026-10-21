@@ -7,11 +7,11 @@ Attention Diet includes Codex and Claude Code manifests. It needs a host that ca
 Install from the public marketplace, then start a new task so Codex loads the plugin:
 
 ```sh
-codex plugin marketplace add mberto10/applied-systems
-codex plugin add attention-diet@applied-systems
+codex plugin marketplace add mberto10/applied-attention
+codex plugin add attention-diet@applied-attention
 ```
 
-For local development, register a checkout instead: `codex plugin marketplace add /absolute/path/to/applied-systems`.
+For local development, register a checkout instead: `codex plugin marketplace add /absolute/path/to/applied-attention`.
 
 Browser sources require Codex's in-app browser tools. Plain CLI access alone does not supply them. If those tools are unavailable, explicitly choose an installed [agent-browser integration](../integrations/browsers/agent-browser.md) or an available [connector](../integrations/connectors.md) during setup.
 
@@ -20,8 +20,8 @@ Browser sources require Codex's in-app browser tools. Plain CLI access alone doe
 Install from the public marketplace inside Claude Code, then start a new session:
 
 ```text
-/plugin marketplace add mberto10/applied-systems
-/plugin install attention-diet@applied-systems
+/plugin marketplace add mberto10/applied-attention
+/plugin install attention-diet@applied-attention
 ```
 
 To load a local checkout for one session instead, run `claude --plugin-dir "$PWD"` from the plugin root. Use `/attention-diet:setup`, `/attention-diet:attention-diet` and `/attention-diet:tune`, or ask in ordinary language.

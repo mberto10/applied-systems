@@ -1,6 +1,6 @@
 {
-  "name": "applied-systems",
-  "interface": {"displayName": "Applied Systems"},
+  "name": "applied-attention",
+  "interface": {"displayName": "Applied Attention"},
   "plugins": [
     {
       "name": "attention-diet",
