@@ -70,6 +70,11 @@ class ProviderShapeTests(unittest.TestCase):
         self.assertEqual(len(body['questions']['ev']['criteria']), 3)
         self.assertEqual(body['state']['item']['text'], ENTRY['text'])
 
+    def test_jev_body_lists_score_levels_and_escapes_quoted_text(self):
+        body = decide.native_body('typesafe/jev-1.13', dict(ENTRY, text='a <b> & c'), self.asked, 'jev')
+        self.assertTrue(body['questions']['ev']['criteria'][2].startswith('First-hand: '))
+        self.assertEqual(body['state']['item']['text'], 'a &lt;b&gt; &amp; c')
+
     def test_openai_body(self):
         body = decide.openai_body('gpt-6-luna', ENTRY, self.asked)
         self.assertEqual([q['type'] for q in body['questions']][:2], ['predicate', 'predicate'])
@@ -123,7 +128,8 @@ class ScoreTests(unittest.TestCase):
             answers = {name: {'type': 'noul', 'noul': 0.9 if strong and name == 'i2' else 0.05}
                        for name in body['questions'] if name != 'ev'}
             answers['ev'] = {'type': 'score', 'score': 1.8}
-            return {'result': {'answers': answers}, '_treg': {'charged_micro': 20}}
+            return {'result': {'model': 'typesafe/jev-1.13-20260917', 'answers': answers},
+                    '_treg': {'charged_micro': 20}}
 
         entries = [dict(ENTRY, identifier='a', text='A memory file for agents, with numbers.'),
                    dict(ENTRY, identifier='b', text='Sourdough at 24 degrees.')]
@@ -132,6 +138,14 @@ class ScoreTests(unittest.TestCase):
         self.assertEqual([(d['identifier'], d['decision']) for d in result['decisions']], [('a', 'include'), ('b', 'drop')])
         self.assertEqual(result['charged_micro'], 40)
         self.assertEqual(result['errors'], [])
+
+    def test_jev_answer_from_another_model_is_not_used(self):
+        def treg(argv):
+            return {'result': {'model': 'someone/else', 'answers': {'i1': {'type': 'noul', 'noul': 0.99}}}}
+
+        result = decide.score(contract(), 'x-agents', [ENTRY], transport={'treg': treg})
+        self.assertEqual(result['decisions'][0]['decision'], 'undecided')
+        self.assertIn('someone/else', result['errors'][0])
 
     def test_http_providers_and_errors_leave_entries_undecided(self):
         def http(url, key_env, _body):

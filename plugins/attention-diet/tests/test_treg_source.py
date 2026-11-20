@@ -93,10 +93,11 @@ class FetchTests(unittest.TestCase):
     def test_call_uses_only_the_contract_catalog_id_and_window(self):
         result = treg.fetch(self.contract, 'x-agents', 'agent_posts', 10, runner=self.runner, now=NOW)
         argv = self.calls[0]
-        self.assertEqual(argv[:4], ['treg', '--json', 'call', 'treg.x.search.posts'])
-        query = argv[argv.index('--query') + 1]
-        self.assertIn(f'since_time:{NOW - 86400}', query)
-        self.assertNotIn('{since_unix}', query)
+        self.assertEqual(argv[:6], ['treg', '--json', 'call', 'treg.x.search.posts', '--method', 'POST'])
+        self.assertNotIn('--query', argv)
+        body = json.loads(argv[argv.index('--data') + 1])
+        self.assertIn('since:2027-01-14 ', body['q'])  # the window's start date, filled into the POST body
+        self.assertNotIn('{since_date}', body['q'])
         self.assertEqual([e['identifier'] for e in result['entries']],
                          ['https://x.com/builder_a/status/11', 'https://x.com/c/status/13'])
         self.assertEqual((result['outside_window'], result['undated_entries'], result['unidentified_entries']), (1, 1, 1))
@@ -120,6 +121,11 @@ class FetchTests(unittest.TestCase):
             treg.fetch(self.contract, 'x-agents', 'home_feed', 5, runner=self.runner)
         with self.assertRaises(ValueError):
             treg.fetch(self.contract, 'x-agents', 'agent_posts', -1, runner=self.runner)
+
+    def test_placeholders_fill_nested_strings_only(self):
+        values = treg.window_values(24, NOW)
+        self.assertEqual(treg.fill({'q': 'x since_time:{since_unix}', 'n': 5, 'l': ['{since_date}']}, values),
+                         {'q': f'x since_time:{NOW - 86400}', 'n': 5, 'l': ['2027-01-14']})
 
     def test_post_calls_send_the_body(self):
         argv = treg.call_argv('treg', {'catalog_id': 'a.b', 'method': 'POST', 'body': {'k': 'v'}, 'query': {}})
