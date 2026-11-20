@@ -6,7 +6,7 @@ Read when the plan lists a thread with `access.type: treg`. [treg](https://treg.
 
 - **The user sets up treg.** They install the `treg` CLI and sign in (`treg login`), and the account needs credit (`treg balance`). Never install, sign in or top up for them; point them to https://treg.to/llms.txt.
 - **Terms.** treg reaches several platforms through third-party vendors. Most platforms built around a feed prohibit automated access in their terms, and that prohibition does not go away because a vendor makes the request. The user decides whether to use such a route; say so once during setup.
-- **Cost.** Every call is billed to the user's treg account. The helper returns each call's charge as `charged_micro` (millionths of a dollar).
+- **Cost.** Every call is billed to the user's treg account. The helper returns each call's charge as `charged_micro` (millionths of a dollar). A routed tool such as `treg.x.search.posts` tries its providers in order until one returns rows; providers that bill misses are charged too, within treg's per-call cost cap.
 
 ## Configuring a treg thread
 
@@ -17,16 +17,16 @@ Give each surface one call in `treg_calls`:
   "agent_posts": {
     "catalog_id": "treg.x.search.posts",
     "label": "X",
-    "query": {"q": "(\"AI agent\" OR \"Claude Code\") since_time:{since_unix} min_faves:50"},
+    "method": "POST",
+    "body": {"q": "(\"AI agent\" OR \"Claude Code\") since:{since_date} min_faves:50 -is:retweet"},
     "window_hours": 24
   }
 }
 ```
 
 - `catalog_id` is an exact id from `treg catalog search "<what the call does>"` and `treg catalog get <id>`. Never guess an id or its parameters; read them from the catalog during setup. The helper calls only the ids the contract names, which keeps the thread to the services it was set up for.
-- `query` holds the call's parameters as the catalog describes them. `{since_unix}`, `{since_iso}` and `{since_date}` are replaced with the start of the window. Use them where the endpoint filters by time; otherwise the helper drops rows older than the window itself.
+- `query` (GET) or `method: POST` with `body` holds the call's parameters exactly as `treg catalog get` describes them. `treg.x.search.posts` is a POST whose only field is `q`, which takes X search operators such as `since:` and `min_faves:`. `{since_unix}`, `{since_iso}` and `{since_date}` are replaced with the start of the window in every string of `query` or `body`. Use them where the endpoint filters by time; the helper also drops rows older than the window itself, so a date-granular filter is enough.
 - `window_hours` (1 to 168) is how far back a check looks.
-- `method` and `body` are for catalog endpoints that take a POST.
 
 Mark the thread `content: public_posts`; validation requires it. Use `service: treg` so all treg threads share one time allowance, or one service per platform if each should have its own. Set `collection.<surface>` to `{"mode": "sample", "max_items": N}`: a search returns one page, so a treg surface is a sample, never a full scan. The procedure is the same for every treg thread:
 

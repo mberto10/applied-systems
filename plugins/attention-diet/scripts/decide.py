@@ -81,8 +81,13 @@ def state(entry):
 
 
 # Request bodies, one per provider family. Pure functions, so tests can check them without a network.
-def native_body(model, entry, asked):
-    """Perplexity's format, which Jev shares: state plus a map of named questions."""
+def escape(value):
+    return value.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;') if isinstance(value, str) else value
+
+
+def native_body(model, entry, asked, provider='perplexity'):
+    """Perplexity's format, which Jev shares: state plus a map of named questions. A score's criteria
+    are an ordered list of levels for both; Jev's API rejects a label map despite its catalog text."""
     body = {}
     for q in asked:
         if q['type'] == 'binary':
@@ -90,7 +95,10 @@ def native_body(model, entry, asked):
         else:
             body[q['name']] = {'type': 'score', 'instructions': q['instructions'],
                                'criteria': [f'{label}: {text}' for label, text in q['levels']]}
-    return {'model': model, 'state': state(entry), 'questions': body}
+    view = state(entry)
+    if provider == 'jev':  # Jev's catalog entry asks for & < > escaped in untrusted text
+        view['item'] = {key: escape(value) for key, value in view['item'].items()}
+    return {'model': model, 'state': view, 'questions': body}
 
 
 def openai_body(model, entry, asked):
@@ -144,9 +152,11 @@ def ask_one(provider, model, entry, asked, transport):
     """Answers and charge for one entry from a native decision provider."""
     if provider == 'jev':
         argv = ['--json', 'call', JEV_CATALOG_ID, '--method', 'POST', '--data',
-                json.dumps(native_body(model, entry, asked), ensure_ascii=False)]
+                json.dumps(native_body(model, entry, asked, 'jev'), ensure_ascii=False)]
         reply = transport['treg'](argv)
         payload = reply.get('result', reply)
+        served = str(payload.get('model') or '')
+        require(served.startswith(model), f'Jev answered with model {served or "unknown"}, not {model}')
         return native_answers(payload.get('answers')), (reply.get('_treg') or {}).get('charged_micro')
     url, key_env = ENDPOINTS[provider]
     if provider == 'perplexity':
@@ -196,7 +206,8 @@ def judge(answers, asked, config):
     if relevance < config['include_at']:
         return {**result, 'decision': 'drop', 'reason': f'Weak match: {best} at {relevance:.2f}'}
     if evidence is not None and evidence < config['min_evidence']:
-        return {**result, 'decision': 'drop', 'reason': f'Evidence below the contract minimum ({label})'}
+        return {**result, 'decision': 'drop',
+                'reason': f'Evidence {evidence:.2f} ({label}) below the contract minimum {config["min_evidence"]:g}'}
     return {**result, 'decision': 'include',
             'reason': f'Matches {best} ({relevance:.2f})' + (f'; evidence: {label}' if label else '')}
 

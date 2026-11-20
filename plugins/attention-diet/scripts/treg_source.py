@@ -34,7 +34,7 @@ FIELDS = {
     'id': 'id_str id rest_id aweme_id video_id post_id objectID',
     'url': 'permalink share_url url link hn_url web_url',  # Reddit: the thread, not the linked image
     'text': 'full_text text title desc description selftext caption content story_text tagline',
-    'author': 'author.username author.unique_id author.screen_name user.screen_name channel.name '
+    'author': 'authorUsername author.userName author.username author.unique_id author.screen_name user.screen_name channel.name '
               'author.name author username screen_name',
     'created': 'created_at createdAt created_utc createdUtc create_time createTime published_at '
                'publishedAt timestamp time',
@@ -152,12 +152,27 @@ def entry(row, source_label, catalog_id):
             'text': clipped, 'text_truncated': len(text) > TEXT_LIMIT, 'engagement': engagement, 'basis': basis}
 
 
-def resolve_query(query, window_hours, now):
+def window_values(window_hours, now):
     since = now - window_hours * 3600
-    values = {'since_unix': str(int(since)),
-              'since_iso': datetime.fromtimestamp(since, timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-              'since_date': datetime.fromtimestamp(since, timezone.utc).strftime('%Y-%m-%d')}
-    return {key: PLACEHOLDER.sub(lambda m: values[m.group(1)], str(value)) for key, value in query.items()}
+    return {'since_unix': str(int(since)),
+            'since_iso': datetime.fromtimestamp(since, timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'since_date': datetime.fromtimestamp(since, timezone.utc).strftime('%Y-%m-%d')}
+
+
+def fill(value, values):
+    """Replace window placeholders in every string of a query or body; other values pass unchanged."""
+    if isinstance(value, str):
+        return PLACEHOLDER.sub(lambda m: values[m.group(1)], value)
+    if isinstance(value, dict):
+        return {key: fill(item, values) for key, item in value.items()}
+    if isinstance(value, list):
+        return [fill(item, values) for item in value]
+    return value
+
+
+def resolve_query(query, window_hours, now):
+    values = window_values(window_hours, now)
+    return {key: str(fill(value, values)) for key, value in query.items()}
 
 
 def treg_binary():
@@ -196,7 +211,8 @@ def fetch(contract, thread_id, surface, max_items, seen=(), runner=None, now=Non
     require(type(max_items) is int and max_items >= 0, 'max_items must be a nonnegative integer, the window limit')
     spec = thread['treg_calls'][surface]
     now = time.time() if now is None else now
-    call = {'catalog_id': spec['catalog_id'], 'method': spec.get('method', 'GET'), 'body': spec.get('body', {}),
+    call = {'catalog_id': spec['catalog_id'], 'method': spec.get('method', 'GET'),
+            'body': fill(spec.get('body', {}), window_values(spec['window_hours'], now)),
             'query': resolve_query(spec.get('query', {}), spec['window_hours'], now)}
     answer = (runner or run_treg)(call_argv(treg_binary() if runner is None else 'treg', call))
     payload = answer.get('result', answer) if isinstance(answer, dict) else answer
@@ -221,7 +237,7 @@ def fetch(contract, thread_id, surface, max_items, seen=(), runner=None, now=Non
             entries.append(item)
     batch, rest = entries[:max_items], max(0, len(entries) - max_items)
     return {'account_key': ACCOUNT_KEY, 'thread_id': thread_id, 'surface': surface, 'catalog_id': spec['catalog_id'],
-            'query': call['query'], 'window_hours': spec['window_hours'], 'entries': batch,
+            'query': call['query'] or call['body'], 'window_hours': spec['window_hours'], 'entries': batch,
             'response_entries': identified, 'remaining_in_response': rest, 'outside_window': outside,
             'undated_entries': undated, 'unidentified_entries': unidentified,
             'charged_micro': int(charged) if isinstance(charged, (int, float)) else None,

@@ -66,8 +66,9 @@
         "agent_posts": {
           "catalog_id": "treg.x.search.posts",
           "label": "X",
-          "query": {
-            "q": "(\"AI agent\" OR \"agent harness\" OR \"Claude Code\" OR Codex) (memory OR workflow OR \"I built\") since_time:{since_unix} min_faves:50 -is:retweet"
+          "method": "POST",
+          "body": {
+            "q": "(\"AI agent\" OR \"agent harness\" OR \"Claude Code\" OR Codex) (memory OR workflow OR \"I built\") since:{since_date} min_faves:50 -is:retweet"
           },
           "window_hours": 24
         }
