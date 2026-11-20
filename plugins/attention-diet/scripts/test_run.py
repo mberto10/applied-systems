@@ -51,7 +51,8 @@ def collect(contract, max_items, fetchers):
                 errors.append(f'{thread["id"]}/{surface}: {error}')
                 continue
             charged += got.get('charged_micro') or 0
-            source = briefing.source_label(thread, surface)
+            call = (thread.get('treg_calls') or {}).get(surface) or {}
+            source = call.get('label') or briefing.source_label(thread, surface)
             for entry in got['entries']:
                 batches.append({**entry, 'thread_id': thread['id'], 'surface': surface, 'source': source})
     return batches, skipped, errors, charged
@@ -95,11 +96,10 @@ def preview_data(contract, entries, decisions, notices):
             'title': headline(e), 'summary': (e.get('text') or '')[:280], 'why': d['reason'], 'caveats': [],
             'url': e.get('url'), 'source': e['source'], 'surprise': False})
     held = Counter(held_reason(decisions[e['identifier']]) for e in entries if decisions[e['identifier']]['decision'] != 'include')
-    count = len(passed)
     return {
-        'title': 'Test run · ' + contract['id'],
-        'overview': contract['intent']['purpose'],
-        'meta': f'{count} passed of {len(entries)} looked at · test run, nothing remembered',
+        'title': contract['id'],
+        'overview': '',
+        'meta': datetime.now().strftime('%A %d %B · %H:%M'),
         'notices': notices, 'interests': interests,
         'sections': [{'name': name, 'entries': group} for name, group in sections.items()],
         'held_back': [{'reason': reason, 'count': n} for reason, n in held.most_common()],
@@ -127,8 +127,6 @@ def run(contract, out_dir, max_items=10, fetchers=None, transport=None):
     notices = ['Not checked: ' + s for s in skipped] + ['Could not read ' + e for e in errors]
     if decide_errors:
         notices.append(f'The decision model did not answer for {len(decide_errors)} entries; they are listed as not judged.')
-    if collect_cost or decide_cost:
-        notices.append(f'Cost of this test run: ${(collect_cost + decide_cost) / 1e6:.6f}.')
     data = preview_data(contract, entries, decisions, notices)
     interface, html = render_preview(contract, data)
     out_dir = Path(out_dir).expanduser()

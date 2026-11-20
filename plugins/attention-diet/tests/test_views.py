@@ -43,11 +43,12 @@ class ViewTests(unittest.TestCase):
                                     [{'reason': 'Weak match', 'count': 2}]))
         self.assertIn('&lt;b&gt;x&lt;/b&gt;', html)
         self.assertNotIn('<script', html)
-        self.assertIn('id="f-s-agent-workflows"', html)
+        self.assertNotIn('id="f-s-agent-workflows"', html)  # one section needs no filter
         self.assertIn('id="f-o-feeds-writer"', html)  # a source filter appears once there are two sources
-        self.assertIn('#f-s-agent-workflows:checked~.list article:not(.s-agent-workflows){display:none}', html)
-        self.assertIn('Held back · 2', html)
-        self.assertIn('2 things passed', html)
+        self.assertIn('#f-o-feeds-writer:checked~.list article:not(.o-feeds-writer){display:none}', html)
+        self.assertIn('<summary>Held back</summary>', html)
+        self.assertIn('for="why" class="why-toggle">Reasons<', html)
+        self.assertNotIn('passed', html)
 
     def test_front_page_puts_videos_in_their_own_row(self):
         items = [entry('Lead', 'https://example.org/1'), entry('Second', 'https://example.org/2'),
@@ -94,8 +95,9 @@ class TestRunTests(unittest.TestCase):
         self.assertEqual(summary['counts'], {'looked_at': 2, 'passed': 1})
         self.assertEqual(summary['cost_micro'], {'collect': 2100, 'decide': 40})
         self.assertEqual(summary['interface'], 'needs_you_html')
-        self.assertIn('1 thing passed', html)
+        self.assertNotIn('class="src"', html)  # one source and one section need no label
         self.assertIn('Weak match with your interests', html)
+        self.assertNotIn('Cost of this test run', html)
         self.assertEqual({e['decision'] for e in saved['entries']}, {'include', 'drop'})
 
     def test_browser_threads_are_skipped_and_named(self):
