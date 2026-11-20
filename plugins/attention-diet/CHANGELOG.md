@@ -1,6 +1,21 @@
 # Changelog
 
-Contracts stay on `attention-diet-contract/1.3` and memory records on `attention-summary/1.0` throughout; no migration is needed. 0.7 adds an optional access type, so a contract that uses `feed` needs 0.7 or later.
+Contracts stay on `attention-diet-contract/1.3` and memory records on `attention-summary/1.0` throughout; no migration is needed. 0.7 adds an optional access type, so a contract that uses `feed` needs 0.7 or later, and one that uses `treg` or `curation` needs 0.8 or later.
+
+## 0.8.0 · Unreleased
+
+Collection and curation become separate steps: a helper collects entries in one shape, a decision model scores them against the contract, and code decides.
+
+**treg**
+- New `treg` access type: each surface names one [treg](https://treg.to) catalog call in `treg_calls` (exact catalog id, query, `window_hours`), for public posts on X, Reddit, TikTok, YouTube, Hacker News and more, without a browser or platform sign-in.
+- `scripts/treg_source.py fetch` runs only the contract's catalog ids through the signed-in `treg` CLI, finds the rows in any vendor's answer, drops rows outside the window, already seen or listed twice, and returns entries with a fixed-length basis. Engagement counts stay outside the basis, so a changed like count is not a new post. Each call's charge is returned.
+- treg threads must be `public_posts`; a search reads one page, so a treg surface is a sample.
+- New example, `examples/treg-contract.json`: X posts about building with agents, curated by Jev.
+
+**Decision models**
+- New optional `curation` section. `scripts/decide.py score` asks one question per interest, one per exclusion and one evidence rubric (echo, claim, first-hand) about each entry, and decides include, drop or undecided in code from `include_at`, `exclude_at` and `min_evidence`.
+- Providers: `jev` (TypeSafe AI through treg), `perplexity` and `openai` (native Decisions APIs), and `claude` (the local CLI, prompted estimates). Keys come from the environment, never the contract.
+- `decide.py questions` shows what the contract asks. Nothing learns from reading or clicks; thresholds change only through tune.
 
 ## 0.7.0 · Unreleased
 

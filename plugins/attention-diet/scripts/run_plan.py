@@ -19,6 +19,8 @@ def guide_for(route):
         return 'integrations/browsers/' + BROWSERS[route['provider']] if route.get('provider') else None
     if route['type'] == 'feed':
         return 'integrations/feeds.md'
+    if route['type'] == 'treg':
+        return 'integrations/treg.md'
     return 'integrations/connectors.md'
 
 
@@ -27,7 +29,7 @@ def prepare(path, host):
     contract = contract_api.validate(contract_api.memory.read_json(path))
     # The run skill owns collection rules. Load only integrations used by this run.
     guides = []
-    routes, namespaces, browser, feeds = [], [], False, False
+    routes, namespaces, browser, feeds, treg = [], [], False, False, False
     for thread in contract['coverage_threads']:
         access = copy.deepcopy(thread['access'])
         if access['type'] == 'browser':
@@ -46,6 +48,13 @@ def prepare(path, host):
             guides.append('integrations/feeds.md')
             # No sign-in and no host tools: the bundled helper reads the contract's own feed URLs.
             route = {'thread_id': thread['id'], **access, 'account_key': 'feed:public', 'availability': 'fetch_on_run'}
+        elif access['type'] == 'treg':
+            treg = True
+            guides.append('integrations/treg.md')
+            # The helper calls only the catalog ids the contract names, through the signed-in treg CLI.
+            route = {'thread_id': thread['id'], **access, 'account_key': 'treg:public',
+                     'catalog_ids': sorted({call['catalog_id'] for call in thread['treg_calls'].values()}),
+                     'availability': 'verify_treg_cli'}
         else:
             guides.append('integrations/connectors.md')
             namespaces.append(access['tool_namespace'])
@@ -54,6 +63,8 @@ def prepare(path, host):
     remote = contract['memory_context']['provider'] == 'supermemory'
     if remote:
         guides.append('integrations/codex-adapter.md' if host == 'codex' else 'integrations/memory/supermemory.md')
+    if 'curation' in contract:
+        guides.append('integrations/decision-models.md')
     paths = [str(ROOT / guide) for guide in dict.fromkeys(guides)]
     contract_api.require(all(Path(p).is_file() for p in paths), 'A selected integration guide is missing')
     # Keep every contract-owned field, including source-specific sublimits and policies.
@@ -67,6 +78,10 @@ def prepare(path, host):
         helpers['browser_extract'] = str(ROOT / 'scripts/browser_extract.js')
     if feeds:
         helpers['feed'] = str(ROOT / 'scripts/feed.py')
+    if treg:
+        helpers['treg'] = str(ROOT / 'scripts/treg_source.py')
+    if 'curation' in contract:
+        helpers['decide'] = str(ROOT / 'scripts/decide.py')
     if host == 'codex' and remote:
         helpers['host_adapter'] = str(ROOT / 'scripts/codex_adapter.js')
     # One collector per source service: threads of one service share an account, a tab and a time allowance.

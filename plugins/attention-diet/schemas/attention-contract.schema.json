@@ -201,6 +201,23 @@
           "const": "none"
         }
       }
+    },
+    "tregAccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "fallback"
+      ],
+      "description": "Public posts collected through treg (treg.to) catalog calls named in treg_calls, billed to the signed-in treg account.",
+      "properties": {
+        "type": {
+          "const": "treg"
+        },
+        "fallback": {
+          "const": "none"
+        }
+      }
     }
   },
   "properties": {
@@ -293,6 +310,9 @@
               },
               {
                 "$ref": "#/$defs/feedAccess"
+              },
+              {
+                "$ref": "#/$defs/tregAccess"
               }
             ]
           },
@@ -446,6 +466,56 @@
                 }
               }
             }
+          },
+          "treg_calls": {
+            "type": "object",
+            "description": "One treg catalog call per surface, for treg access. Query values may use {since_unix}, {since_iso} or {since_date} for the start of the window.",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "catalog_id",
+                "window_hours"
+              ],
+              "properties": {
+                "catalog_id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9._-]{1,120}$"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "method": {
+                  "enum": [
+                    "GET",
+                    "POST"
+                  ]
+                },
+                "query": {
+                  "type": "object",
+                  "propertyNames": {
+                    "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+                  },
+                  "additionalProperties": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ]
+                  }
+                },
+                "body": {
+                  "type": "object"
+                },
+                "window_hours": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 168
+                }
+              }
+            }
           }
         },
         "allOf": [
@@ -514,6 +584,29 @@
             "else": {
               "properties": {
                 "feed_urls": false
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "access": {
+                  "properties": {
+                    "type": {
+                      "const": "treg"
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "treg_calls"
+              ]
+            },
+            "else": {
+              "properties": {
+                "treg_calls": false
               }
             }
           }
@@ -722,6 +815,53 @@
           }
         }
       ]
+    },
+    "curation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_model"
+      ],
+      "description": "Optional. A decision model scores each collected entry against this contract; thresholds decide in code.",
+      "properties": {
+        "decision_model": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "provider"
+          ],
+          "properties": {
+            "provider": {
+              "enum": [
+                "jev",
+                "perplexity",
+                "openai",
+                "claude"
+              ]
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          }
+        },
+        "include_at": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "exclude_at": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "min_evidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        }
+      }
     }
   }
 }

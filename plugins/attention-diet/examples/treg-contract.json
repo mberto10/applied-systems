@@ -1,0 +1,119 @@
+{
+  "schema_version": "attention-diet-contract/1.3",
+  "id": "ai-builders",
+  "revision": 1,
+  "intent": {
+    "purpose": "Follow what people who build with AI agents post on X, without opening X.",
+    "success": "A short overview of first-hand posts about agents and attention from the last day; nothing if nothing qualifies.",
+    "interests": [
+      {
+        "id": "agent-workflows",
+        "focus": "Concrete methods, tools or results from building or using AI agents and agent harnesses."
+      },
+      {
+        "id": "agent-memory",
+        "focus": "How agents keep memory, context or preferences across sessions."
+      }
+    ],
+    "excluded": [
+      "Giveaways, course funnels and posts that ask for engagement.",
+      "Token or coin promotion.",
+      "outbound_account_actions"
+    ]
+  },
+  "coverage_threads": [
+    {
+      "id": "x-agents",
+      "service": "treg",
+      "content": "public_posts",
+      "access": {
+        "type": "treg",
+        "fallback": "none"
+      },
+      "account_actions": "none",
+      "surfaces": [
+        "agent_posts"
+      ],
+      "excluded_surfaces": [],
+      "targets": {
+        "agent_posts": {
+          "scope": "X posts from the last 24 hours matching the query, with at least 50 likes."
+        }
+      },
+      "procedure": {
+        "account_identity": "Public search through treg; no X sign-in. Use the account key treg:public.",
+        "read_state": "A search through treg changes nothing on X.",
+        "item_identity": "The post link, else the vendor's post id, exactly as the treg helper returns it.",
+        "pagination": "One call per surface returns one page; further pages are not requested.",
+        "retrieval": "treg_source.py fetch for this surface, within the window limit."
+      },
+      "collection": {
+        "agent_posts": {
+          "mode": "sample",
+          "max_items": 30
+        }
+      },
+      "selection": {
+        "include": "Posts that match a listed interest with something concrete. Give the reason for inclusion.",
+        "exclude": [
+          "Threads that only link to a newsletter or video without saying what is in it."
+        ],
+        "uncertain_relevance": "Omit weak matches; do not fill the allowance.",
+        "evidence": "Summarize only the post's own text and distinguish claims from verified results."
+      },
+      "on_access_failure": "Report the unavailable surface; do not fall back to a browser or another route.",
+      "treg_calls": {
+        "agent_posts": {
+          "catalog_id": "treg.x.search.posts",
+          "label": "X",
+          "query": {
+            "q": "(\"AI agent\" OR \"agent harness\" OR \"Claude Code\" OR Codex) (memory OR workflow OR \"I built\") since_time:{since_unix} min_faves:50 -is:retweet"
+          },
+          "window_hours": 24
+        }
+      }
+    }
+  ],
+  "memory_context": {
+    "provider": "local",
+    "directory": "~/.local/state/attention-diet/ai-builders",
+    "purpose": "avoid_repeating_previously_briefed_items",
+    "on_unavailable": "continue_with_notice"
+  },
+  "run_limits": {
+    "elapsed_minutes": 3,
+    "items_per_surface": 30,
+    "service_minutes": {
+      "treg": 3
+    }
+  },
+  "composition": {
+    "interface": "agent_summary",
+    "delivery": "current_agent_conversation",
+    "template": "./interfaces/agent-summary/template.md",
+    "template_path_base": "plugin_root",
+    "format": "markdown",
+    "sections": [
+      "overview",
+      "updates"
+    ],
+    "target_reading_minutes": 2,
+    "max_items_by_thread": {
+      "x-agents": 6
+    }
+  },
+  "execution": {
+    "mode": "one_off_on_invocation",
+    "schedule_enabled": false,
+    "daily_time": null
+  },
+  "curation": {
+    "decision_model": {
+      "provider": "jev",
+      "model": "typesafe/jev-1.13"
+    },
+    "include_at": 0.7,
+    "exclude_at": 0.6,
+    "min_evidence": 1
+  }
+}

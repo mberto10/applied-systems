@@ -17,9 +17,9 @@ Configuration and state roots can be overridden; the installed contract records 
 
 ## What leaves the machine
 
-The host's model provider processes the source material supplied to the agent. Browser and connector requests reach the selected services. For a feed source, the bundled feed helper requests the feed URL named in the contract, with no cookies or credentials and a user agent that names the plugin. If configured, Supermemory receives the briefing records described above. Host conversation history, tool logs and provider retention are governed separately by those products.
+The host's model provider processes the source material supplied to the agent. Browser and connector requests reach the selected services. For a feed source, the bundled feed helper requests the feed URL named in the contract, with no cookies or credentials and a user agent that names the plugin. For a treg source, the bundled treg helper runs the `treg` CLI with the catalog id and query named in the contract; treg and its vendor receive the query, and treg bills the call. With `curation`, each collected entry's text, author, time, link and engagement counts go to the selected decision provider (treg and TypeSafe AI for `jev`, Perplexity, OpenAI, or Anthropic through the local `claude` CLI). If configured, Supermemory receives the briefing records described above. Host conversation history, tool logs and provider retention are governed separately by those products.
 
-Apart from those feed requests, the bundled Python helpers make no network requests, and none implements an author-operated collection endpoint or telemetry uploader. This does not mean that model processing, browser access or optional connectors happen entirely on the machine.
+Apart from those feed, treg and decision-model requests, the bundled Python helpers make no network requests, and none implements an author-operated collection endpoint or telemetry uploader. This does not mean that model processing, browser access or optional connectors happen entirely on the machine.
 
 ## Reading and account actions
 
