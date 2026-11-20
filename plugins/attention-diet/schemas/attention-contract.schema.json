@@ -654,7 +654,9 @@
           "enum": [
             "agent_summary",
             "briefing_html",
-            "discovery_html"
+            "discovery_html",
+            "needs_you_html",
+            "front_page_html"
           ]
         },
         "delivery": {

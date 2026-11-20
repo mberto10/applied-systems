@@ -4,6 +4,10 @@ Contracts stay on `attention-diet-contract/1.3` and memory records on `attention
 
 ## 0.8.0 · Unreleased
 
+**Views and test runs**
+- Two new interfaces: `needs_you_html`, a short list of what passed with filters by section and source that work without scripts, and `front_page_html`, an edition with a lead story, second stories and rows for videos, posts and articles. Both are offline pages under the same Content-Security-Policy as the other HTML views; `scripts/views.py` builds their bodies from the selection data.
+- `scripts/test_run.py` tries a contract while it is being written: it reads its feed and treg surfaces, scores them with the contract's decision model and writes `test-run.json` and an HTML preview in the contract's view. Nothing is remembered; browser and connector sources are listed as skipped.
+
 Collection and curation become separate steps: a helper collects entries in one shape, a decision model scores them against the contract, and code decides.
 
 **treg**

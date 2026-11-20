@@ -58,7 +58,7 @@ A browser thread needs an entry URL per surface and `navigation`. A connector th
 
 ## Output
 
-`composition.interface` selects `agent_summary` (Markdown in the conversation), `briefing_html` (a dense list to triage) or `discovery_html` (a card grid for choosing what to read). All three render the same [selected-content record](../schemas/selection.schema.json), so changing the view never collects again, changes what was selected or writes memory. Preview any of them from a saved selection:
+`composition.interface` selects `agent_summary` (Markdown in the conversation), `briefing_html` (a dense list to triage), `discovery_html` (a card grid for choosing what to read), `needs_you_html` (a short list of what passed, with filters by section and source that work without scripts) or `front_page_html` (an edition with a lead story, two second stories, and rows for videos, posts and articles, sorted by the link). All of them render the same [selected-content record](../schemas/selection.schema.json), so changing the view never collects again, changes what was selected or writes memory. Preview any of them from a saved selection:
 
 ```sh
 PYTHON scripts/briefing.py render --contract FILE --input SELECTION --interface discovery_html --out PREVIEW.html
