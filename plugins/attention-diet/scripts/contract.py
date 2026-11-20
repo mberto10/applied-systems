@@ -33,6 +33,10 @@ def validate_thread(thread):
     if thread["access"]["type"] == "feed":
         require(set(thread["feed_urls"]) == surfaces, label + ": feed_urls must cover every configured surface")
         require(thread.get("content") == "public_posts", label + ": a feed is public; mark content as public_posts")
+    if thread["access"]["type"] == "treg":
+        require(set(thread["treg_calls"]) == surfaces, label + ": treg_calls must cover every configured surface")
+        require(thread.get("content") == "public_posts",
+                label + ": treg collects public posts; mark content as public_posts")
     for url in [*thread.get("entry_urls", {}).values(), *thread.get("feed_urls", {}).values()]:
         parsed = urlsplit(url)
         require(parsed.scheme == "https" and parsed.hostname and not parsed.username and not parsed.password,

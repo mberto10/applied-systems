@@ -76,6 +76,8 @@ def route(thread):
         return 'Isolated browser session you sign into yourself'
     if access['type'] == 'feed':
         return 'Public RSS or Atom feed, read without a browser or sign-in'
+    if access['type'] == 'treg':
+        return 'Public posts through treg catalog calls, billed to your treg account'
     return f'Connector {access["tool_namespace"]}, through access the service offers'
 
 

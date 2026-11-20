@@ -12,6 +12,7 @@ You choose how to read the result: in the conversation, as a local HTML list or 
 - New releases of the GitHub projects you rely on.
 - Posts from a handful of accounts on an open network such as Bluesky, without the home feed or recommendations.
 - New posts, videos and episodes from the writers, channels and podcasts you follow, through their RSS or Atom feeds. The [feeds example](examples/feeds-contract.json) is a starting point.
+- Public posts on a topic from X, Reddit, YouTube or Hacker News for the last day, collected through [treg](integrations/treg.md) and scored against your contract by a [decision model](integrations/decision-models.md). The [treg example](examples/treg-contract.json) is a starting point; check the platforms' terms first.
 - A readable page of your contract: what counts, what is left out, when a check stops and how it changed over time. Ask to see your contract.
 
 These are configurable uses, not bundled service integrations. Each source needs a feed, an authenticated connector or a supported browser, and a procedure that matches its actual interface. Collection can be incomplete; the briefing says what was checked and where it stopped.
@@ -84,6 +85,7 @@ The agent reads sources and judges relevance. The Python helpers do what a model
 
 - An agent host that can run the local Python helpers and the selected integrations.
 - For browser sources, one supported [browser integration](integrations/browsers/README.md): Codex's in-app browser, the Claude Browser pane, or the local agent-browser CLI. Each is a dedicated environment with its own sign-in; your everyday browser session is never used.
+- For treg sources, the `treg` CLI signed in to an account with credit. For `curation`, the chosen decision provider: treg for Jev, `PERPLEXITY_API_KEY`, `OPENAI_API_KEY`, or the `claude` CLI.
 - For connector sources, authenticated tools with verifiable identity, scoped retrieval and known read-state behaviour. The plugin bundles no connectors and manages no credentials.
 - Python 3.10 or later with `requirements.txt`.
 - A writable local memory directory, or a Supermemory connector that can list, retrieve and save original documents.

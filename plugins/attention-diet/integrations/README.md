@@ -1,10 +1,11 @@
 # Integrations
 
-Integrations describe how the agent uses tools its host supplies, plus one bundled route: a reader for public RSS and Atom feeds. None of them is a credential store. The attention contract selects them independently:
+Integrations describe how the agent uses tools its host supplies, plus two bundled routes: a reader for public RSS and Atom feeds, and a collector for public posts through treg. A bundled decision-model helper can score what any route collects. None of them is a credential store. The attention contract selects them independently:
 
 | Choice | Where it is set | Guides |
 |---|---|---|
-| How a source is reached | Each thread's `access` | [Browsers](browsers/README.md), [connected tools](connectors.md) or [feeds](feeds.md) |
+| How a source is reached | Each thread's `access` | [Browsers](browsers/README.md), [connected tools](connectors.md), [feeds](feeds.md) or [treg](treg.md) |
+| Who scores collected entries | `curation` (optional) | [Decision models](decision-models.md) |
 | Where "already briefed" is remembered | `memory_context` | [Briefing memory](memory/README.md) |
 | Remote memory transfer | Supermemory on Codex only | [Codex adapter](codex-adapter.md) |
 

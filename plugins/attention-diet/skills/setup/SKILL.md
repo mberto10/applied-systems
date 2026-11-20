@@ -22,7 +22,7 @@ Read only [describing a source](../../docs/contract-guide.md#describing-a-source
 
 Use source documentation or previously established observations. Put live checks for account identity, navigation and read-state effects in the procedure as conditions to verify before dependent reads on the first run; do not claim setup verified a live interface. Unknown entry URLs, unavailable tool capabilities or an unspecified retrieval scope are gaps to resolve, never guesses.
 
-Load only the requested branch: [connector configuration](../../integrations/connectors.md) for connectors, [feeds](../../integrations/feeds.md) for RSS or Atom feeds, [Supermemory setup](../../integrations/memory/supermemory-setup.md) for that memory provider, or [specialized changes](../tune/references/specialized-changes.md) for other output, parallelism or surprise settings. Local memory needs no provider guide. Keep isolation, read-only access and no fallback; never retain credentials or placeholder instructions.
+Load only the requested branch: [connector configuration](../../integrations/connectors.md) for connectors, [feeds](../../integrations/feeds.md) for RSS or Atom feeds, [treg](../../integrations/treg.md) for public posts through treg, [decision models](../../integrations/decision-models.md) for `curation`, [Supermemory setup](../../integrations/memory/supermemory-setup.md) for that memory provider, or [specialized changes](../tune/references/specialized-changes.md) for other output, parallelism or surprise settings. Local memory needs no provider guide. Keep isolation, read-only access and no fallback; never retain credentials or placeholder instructions.
 
 ## Prepare and install
 
