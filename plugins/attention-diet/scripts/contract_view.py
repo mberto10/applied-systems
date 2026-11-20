@@ -151,7 +151,8 @@ def render(contract, changelog=None):
     provider = contract['memory_context']['provider']
     where = 'in local files on this computer' if provider == 'local' else 'in your Supermemory space'
     interface = {'agent_summary': 'in the conversation', 'briefing_html': 'as a local HTML page',
-                 'discovery_html': 'as a local HTML page'}[composition['interface']]
+                 'discovery_html': 'as a local HTML page', 'needs_you_html': 'as a short list of what needs you',
+                 'front_page_html': 'as a personal front page'}[composition['interface']]
     body = [
         f'<p class="kicker">Attention contract · {e(contract["id"])} · revision {contract["revision"]}</p>',
         f'<h1>{e(intent["purpose"])}</h1>', f'<p class="success">{e(intent["success"])}</p>',

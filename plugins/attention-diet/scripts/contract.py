@@ -68,7 +68,8 @@ def validate(contract):
     composition = contract["composition"]
     require(set(composition.get("max_items_by_thread", {})) <= {t["id"] for t in threads},
             "max_items_by_thread must name configured thread ids")
-    formats = {"agent_summary": "markdown", "briefing_html": "html", "discovery_html": "html"}
+    formats = {"agent_summary": "markdown", "briefing_html": "html", "discovery_html": "html",
+               "needs_you_html": "html", "front_page_html": "html"}
     require(composition.get("format", formats[composition["interface"]]) == formats[composition["interface"]],
             "Output format does not match interface")
     return contract

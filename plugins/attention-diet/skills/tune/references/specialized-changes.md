@@ -11,6 +11,8 @@ For a bundled view, change `composition.interface`, `format`, `template` and `te
 | `agent_summary` | `markdown` | `./interfaces/agent-summary/template.md` |
 | `briefing_html` | `html` | `./interfaces/html/template.html` |
 | `discovery_html` | `html` | `./interfaces/html/template.html` |
+| `needs_you_html` | `html` | `./interfaces/needs-you/template.html` |
+| `front_page_html` | `html` | `./interfaces/front-page/template.html` |
 
 For a custom view, follow [your own view](../../../docs/contract-guide.md#your-own-view). Write a new file beside the contract, preserving the existing view; use `template_path_base: contract_dir`. Build from `$data`, retain `$notices`, place source values with `textContent`, and include the required offline Content-Security-Policy. Preview with fictional content before applying:
 
