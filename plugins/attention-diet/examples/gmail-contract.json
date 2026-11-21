@@ -1,0 +1,132 @@
+{
+  "schema_version": "attention-diet-contract/1.3",
+  "id": "gmail",
+  "revision": 1,
+  "intent": {
+    "purpose": "See only the emails that need me: people who wrote to me, platforms telling me someone is waiting, and deadlines that are mine.",
+    "success": "A short list of what needs a reply or an action; nothing when nothing does.",
+    "interests": [
+      {
+        "id": "ai-tools",
+        "focus": "AI agent workflows and tools; read by the reading threads, while the Gmail thread asks its own questions."
+      }
+    ],
+    "excluded": [
+      "outbound_account_actions"
+    ]
+  },
+  "coverage_threads": [
+    {
+      "id": "gmail",
+      "service": "email",
+      "content": "private_communication",
+      "access": {
+        "type": "connector",
+        "tool_namespace": "gmail_connector_found_in_setup",
+        "fallback": "none"
+      },
+      "expected_account": "you@example.com",
+      "account_actions": "none",
+      "surfaces": [
+        "inbox"
+      ],
+      "excluded_surfaces": [],
+      "targets": {
+        "inbox": {
+          "scope": "Inbox threads received since the last run, at most the last two days, outside the Promotions and Forums tabs: search_threads with query \"in:inbox newer_than:2d -category:promotions -category:forums\" and view THREAD_VIEW_SUMMARY."
+        }
+      },
+      "procedure": {
+        "account_identity": "Establish the mailbox address from connection metadata; it must equal expected_account before any thread is listed.",
+        "read_state": "search_threads only lists; it never changes read state. Judge from the latest message's sender, subject and snippet and label them as a preview. Open a thread with get_thread (MINIMAL) only when the snippet is cut before the request; get_thread changes nothing either.",
+        "item_identity": "The id of the latest message in the thread; a new reply in a known thread is a new item.",
+        "pagination": "Follow pageToken with pageSize 50 until the scope is exhausted or the inspection limit is reached; report which of the two ended the listing.",
+        "retrieval": "For the decision model, pass each message as author = sender, published = date, url = viewUrl, text = \"Subject: <subject>\\n<snippet>\"; labelIds stay out of the text."
+      },
+      "collection": {
+        "inbox": {
+          "mode": "scan"
+        }
+      },
+      "selection": {
+        "include": "Email that needs me: a reply, an action or a deadline. Give the reason in one line.",
+        "exclude": [
+          "Newsletters, mailing lists and digests.",
+          "Promotions, offers and sales.",
+          "Receipts, shipping and account notices that ask nothing of me.",
+          "Social notifications without a person waiting: likes, profile views, follower or connection suggestions, job alerts."
+        ],
+        "uncertain_relevance": "Omit weak matches; do not fill the allowance.",
+        "evidence": "Summarize only the sender, subject and snippet; label previews as previews."
+      },
+      "on_access_failure": "Report the unavailable inbox; do not fall back to a browser or another route.",
+      "interests": [
+        {
+          "id": "reply",
+          "focus": "A person wrote to me personally and expects an answer or a decision."
+        },
+        {
+          "id": "someone_waiting",
+          "focus": "A platform tells me a specific person is waiting for me: a new direct message, an invitation, a review or comment request, a mention."
+        },
+        {
+          "id": "deadline",
+          "focus": "A concrete deadline, appointment or action that is mine, such as a bill due, a form to sign or a meeting change."
+        }
+      ]
+    }
+  ],
+  "memory_context": {
+    "provider": "local",
+    "directory": "~/.local/state/attention-diet/gmail",
+    "purpose": "avoid_repeating_previously_briefed_items",
+    "on_unavailable": "continue_with_notice"
+  },
+  "run_limits": {
+    "elapsed_minutes": 6,
+    "items_per_surface": 100,
+    "service_minutes": {
+      "email": 5
+    }
+  },
+  "composition": {
+    "interface": "needs_you_html",
+    "delivery": "current_agent_conversation",
+    "template": "./interfaces/needs-you/template.html",
+    "template_path_base": "plugin_root",
+    "format": "html",
+    "sections": [
+      "reply",
+      "someone_waiting",
+      "deadline"
+    ],
+    "target_reading_minutes": 2,
+    "max_items_by_thread": {
+      "gmail": 15
+    }
+  },
+  "execution": {
+    "mode": "one_off_on_invocation",
+    "schedule_enabled": false,
+    "daily_time": null
+  },
+  "serendipity": {
+    "enabled": false,
+    "max_items": 1,
+    "sources": [],
+    "share_of_discovery_sample": 0.2,
+    "test": [
+      "Substantive, clearly outside the listed interests, with a concrete reason to deserve attention."
+    ],
+    "avoid_repeating_topics_for_runs": 5
+  },
+  "curation": {
+    "decision_model": {
+      "provider": "jev",
+      "model": "typesafe/jev-1.13"
+    },
+    "include_at": 0.7,
+    "exclude_at": 0.6,
+    "min_evidence": 0
+  }
+}

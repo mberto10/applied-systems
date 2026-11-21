@@ -469,7 +469,7 @@
           },
           "treg_calls": {
             "type": "object",
-            "description": "One treg catalog call per surface, for treg access. Query values may use {since_unix}, {since_iso} or {since_date} for the start of the window.",
+            "description": "One treg catalog call per surface, for treg access, or one per handle or handle group when handles are set. Query and body values may use {since_unix}, {since_iso} or {since_date} for the start of the window, and {handle} or {from_handles} with handles.",
             "additionalProperties": {
               "type": "object",
               "additionalProperties": false,
@@ -513,9 +513,49 @@
                   "type": "integer",
                   "minimum": 1,
                   "maximum": 168
+                },
+                "handles": {
+                  "type": "array",
+                  "description": "Accounts this surface checks: one call per handle with {handle}, or grouped X search clauses with {from_handles}.",
+                  "minItems": 1,
+                  "maxItems": 500,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_]{1,15}$"
+                  }
+                },
+                "group_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20,
+                  "description": "Handles per {from_handles} search; default 10."
+                },
+                "skip_replies": {
+                  "type": "boolean",
+                  "description": "Drop posts that start with @, i.e. replies."
                 }
               }
             }
+          },
+          "interests": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "focus"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "#/$defs/text"
+                },
+                "focus": {
+                  "$ref": "#/$defs/text"
+                }
+              }
+            },
+            "description": "Replaces intent.interests in the decision model's questions for this thread, e.g. what in an inbox needs the user. Section names come from these ids."
           }
         },
         "allOf": [

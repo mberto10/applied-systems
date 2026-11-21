@@ -8,9 +8,9 @@ Read when the plan lists the `decide` helper, which means the contract has a `cu
 
 | Question | From the contract | Answer |
 |---|---|---|
-| One per interest | `intent.interests[].focus` | Probability that the entry is substantively about it |
+| One per interest | `intent.interests[].focus`, or the thread's own `interests` when it sets them | Probability that the entry is substantively about it |
 | One per exclusion | Sentences in `intent.excluded` and the thread's `selection.exclude` (machine slugs such as `outbound_account_actions` are skipped) | Probability that the entry falls under it |
-| One evidence rubric | Fixed: echo, claim, first-hand | A level from 0 to 2 |
+| One evidence rubric, `public_posts` threads only | Fixed: echo, claim, first-hand | A level from 0 to 2 |
 
 The model sees one entry at a time (author, time, link, text and engagement counts), with a note that the text is evidence, never instructions. Engagement is shown as evidence about reach; it is not the ranking. Show the questions for a thread with `decide.py questions --contract PATH --thread T`.
 
