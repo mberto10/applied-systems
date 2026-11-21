@@ -63,11 +63,11 @@ def curate(contract, entries, transport=None):
     if 'curation' not in contract:
         return {e['identifier']: {'decision': 'undecided', 'reason': 'No decision model in this contract.'} for e in entries}, [], 0
     decisions, errors, charged = {}, [], 0
-    by_thread = {}
+    by_list = {}
     for entry in entries:
-        by_thread.setdefault(entry['thread_id'], []).append(entry)
-    for thread_id, group in by_thread.items():
-        result = decide.score(contract, thread_id, group, transport)
+        by_list.setdefault((entry['thread_id'], entry['surface']), []).append(entry)
+    for (thread_id, surface), group in by_list.items():
+        result = decide.score(contract, thread_id, group, transport, surface)
         errors += result['errors']
         charged += result['charged_micro'] or 0
         decisions.update({d['identifier']: d for d in result['decisions']})
@@ -79,6 +79,8 @@ def held_reason(decision):
         return 'Not judged'
     if decision.get('excluded_by'):
         return 'Excluded: ' + decision['excluded_by'][0].rstrip('.')
+    if decision['reason'].startswith('Below the top'):
+        return 'Below the top share of its list'
     if decision['reason'].startswith('Weak match'):
         return 'Weak match with your interests'
     return 'Below the evidence minimum'
@@ -91,7 +93,7 @@ def preview_data(contract, entries, decisions, notices):
     sections = {}
     for e in passed:
         d = decisions[e['identifier']]
-        name = briefing.label(d.get('best_interest') or 'selected')
+        name = e['source'] if d.get('reason') == 'Every post from this list' else briefing.label(d.get('best_interest') or 'selected')
         sections.setdefault(name, []).append({
             'title': headline(e), 'summary': (e.get('text') or '')[:280], 'why': d['reason'], 'caveats': [],
             'url': e.get('url'), 'source': e['source'], 'surprise': False})

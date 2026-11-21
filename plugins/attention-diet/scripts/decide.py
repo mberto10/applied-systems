@@ -16,6 +16,7 @@ Providers share one question format and differ only in transport:
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -229,10 +230,43 @@ def default_transport():
     return {'treg': treg, 'http': post_json, 'claude': claude}
 
 
-def score(contract, thread_id, entries, transport=None):
+def list_rule(thread, surface):
+    """How a surface's entries are chosen: every_post, top_share or the contract's bar (judged)."""
+    if surface is None:
+        return {'mode': 'judged'}
+    require(surface in thread['surfaces'], 'Surface is not configured for this thread')
+    return ((thread.get('treg_calls') or {}).get(surface) or {}).get('select') or {'mode': 'judged'}
+
+
+def top_share(decisions, share):
+    """Keep the best-ranked share of the entries that were judged and not excluded; drop the rest."""
+    ranked = sorted((d for d in decisions if d['decision'] != 'undecided' and not d.get('excluded_by')),
+                    key=lambda d: -(d.get('rank') or 0))
+    keep = {d['identifier'] for d in ranked[:max(1, math.ceil(share * len(ranked)))]} if ranked else set()
+    label = f'top {round(share * 100)}%'
+    out = []
+    for d in decisions:
+        if d['decision'] == 'undecided' or d.get('excluded_by'):
+            out.append(d)
+        elif d['identifier'] in keep:
+            out.append({**d, 'decision': 'include', 'reason': f'In the {label} of this list: {d["best_interest"]} ({d["relevance"]:.2f})'})
+        else:
+            out.append({**d, 'decision': 'drop', 'reason': f'Below the {label} of this list'})
+    return out
+
+
+def score(contract, thread_id, entries, transport=None, surface=None):
     config = settings(contract)
     thread = next((t for t in contract['coverage_threads'] if t['id'] == thread_id), None)
     require(thread is not None, 'Unknown thread')
+    rule = list_rule(thread, surface)
+    if rule['mode'] == 'every_post':  # a list you read in full: no model call
+        require(isinstance(entries, list) and all(isinstance(e, dict) and e.get('identifier') for e in entries),
+                'entries must be the objects a collection helper returned, each with an identifier')
+        return {'provider': None, 'model': None, 'thread_id': thread_id, 'surface': surface, 'rule': rule,
+                'thresholds': None, 'questions': [],
+                'decisions': [{'identifier': e['identifier'], 'decision': 'include', 'reason': 'Every post from this list',
+                               'rank': 1.0} for e in entries], 'errors': [], 'charged_micro': None}
     require(isinstance(entries, list) and all(isinstance(e, dict) and e.get('identifier') for e in entries),
             'entries must be the objects a collection helper returned, each with an identifier')
     asked, transport = questions(contract, thread), transport or default_transport()
@@ -254,8 +288,10 @@ def score(contract, thread_id, entries, transport=None):
         answered = [answers for answers, _ in results]
         charged = sum(int(c) for _, c in results if isinstance(c, (int, float)))
     decisions = [{'identifier': e['identifier'], **judge(a, asked, config)} for e, a in zip(entries, answered)]
+    if rule['mode'] == 'top_share':
+        decisions = top_share(decisions, rule['share'])
     decisions.sort(key=lambda d: (d['decision'] != 'include', -(d.get('rank') or 0)))
-    return {'provider': config['provider'], 'model': config['model'], 'thread_id': thread_id,
+    return {'provider': config['provider'], 'model': config['model'], 'thread_id': thread_id, 'surface': surface, 'rule': rule,
             'thresholds': {k: config[k] for k in ('include_at', 'exclude_at', 'min_evidence')},
             'questions': [{k: q[k] for k in ('name', 'kind', 'ref')} for q in asked],
             'decisions': decisions, 'errors': errors, 'charged_micro': charged or None}
@@ -266,7 +302,7 @@ def main():
     sub = parser.add_subparsers(dest='command', required=True)
     run = sub.add_parser('score', help='Decide on entries returned by a collection helper.')
     run.add_argument('--contract', required=True)
-    run.add_argument('--input', required=True, help='"-" for JSON on stdin: thread_id, entries')
+    run.add_argument('--input', required=True, help='"-" for JSON on stdin: thread_id, surface (optional), entries')
     show = sub.add_parser('questions', help='Show the questions the contract produces for a thread.')
     show.add_argument('--contract', required=True)
     show.add_argument('--thread', required=True)
@@ -281,7 +317,8 @@ def main():
             return 0
         payload = json.load(sys.stdin) if args.input == '-' else json.loads(Path(args.input).read_text())
         require(isinstance(payload, dict), 'Input must be an object')
-        print(json.dumps(score(contract, payload.get('thread_id'), payload.get('entries')), ensure_ascii=False))
+        print(json.dumps(score(contract, payload.get('thread_id'), payload.get('entries'), surface=payload.get('surface')),
+                         ensure_ascii=False))
     except (ValueError, OSError, KeyError, TypeError) as error:
         print(json.dumps({'error': str(error)}), file=sys.stderr)
         return 1

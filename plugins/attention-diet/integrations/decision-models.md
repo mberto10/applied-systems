@@ -22,6 +22,11 @@ In code, from the thresholds in `curation`:
 - **drop** otherwise, with the reason: the exclusion that applied, the weak match, or the evidence level.
 - **undecided** when the model did not answer every interest question (an error, a refusal or a timeout). Judge undecided entries yourself under the contract's selection rules, as you would without curation.
 
+A treg list can set its own rule with `select` (pass `surface` so the helper applies it):
+
+- `{"mode": "every_post"}`: every entry is included, with no model call. For accounts you read in full.
+- `{"mode": "top_share", "share": 0.2}`: the model scores every entry as usual, entries hit by an exclusion or left undecided are set aside, and the best-ranked share of the rest is included (at least one). The `include_at` bar does not apply. For exploration lists such as your own searches.
+
 Included entries are ranked by relevance plus a small evidence bonus. Ceilings still come from `composition`; a high score never fills the allowance by itself.
 
 ## Providers
@@ -43,7 +48,7 @@ After each collection batch, and before `capture-window`:
 
 ```sh
 PYTHON SCRIPTS/decide.py score --contract CONTRACT_PATH --input - <<'JSON'
-{"thread_id":"T","entries":[...the entries the collection helper returned...]}
+{"thread_id":"T","surface":"S","entries":[...the entries the collection helper returned for that surface...]}
 JSON
 ```
 
