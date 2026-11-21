@@ -17,17 +17,17 @@ import contract as contract_api  # noqa: E402
 import treg_source  # noqa: E402
 
 require = contract_api.require
-CATALOG_ID = 'tikhub.x.twitter-web-fetch-user-followings'
+CATALOG_ID = 'anyapi.twitter.following'  # about 50 accounts per page; tikhub's equivalent rejected some handles
 MAX_PAGES = 40
 MAX_HANDLES = 500  # the schema's limit for one surface
 HANDLE = re.compile(r'^[A-Za-z0-9_]{1,15}$')
-NAME_FIELDS = ('screen_name', 'userName', 'username', 'legacy.screen_name', 'core.screen_name')
+NAME_FIELDS = ('username', 'screen_name', 'userName', 'legacy.screen_name', 'core.screen_name')
 
 
 def _cursor(document):
     """The next-page cursor anywhere in the answer, or None."""
     if isinstance(document, dict):
-        for key in ('next_cursor', 'cursor_bottom', 'next'):
+        for key in ('nextCursor', 'next_cursor', 'cursor_bottom'):
             value = document.get(key)
             if isinstance(value, str) and value and value != '0':
                 return value
@@ -44,9 +44,9 @@ def following(handle, runner=None, max_pages=MAX_PAGES):
     binary = treg_source.treg_binary() if runner is None else 'treg'
     names, cursor, charged = [], None, 0
     for _ in range(max_pages):
-        query = {'screen_name': handle, **({'cursor': cursor} if cursor else {})}
+        body = {'username': handle, **({'cursor': cursor} if cursor else {})}
         answer = (runner or treg_source.run_treg)(
-            treg_source.call_argv(binary, {'catalog_id': CATALOG_ID, 'method': 'GET', 'body': {}, 'query': query}))
+            treg_source.call_argv(binary, {'catalog_id': CATALOG_ID, 'method': 'POST', 'body': body, 'query': {}}))
         charged += int((answer.get('_treg') or {}).get('charged_micro') or 0)
         payload = answer.get('result', answer)
         page = []
