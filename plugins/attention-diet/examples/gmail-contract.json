@@ -37,7 +37,7 @@
         }
       },
       "procedure": {
-        "account_identity": "Establish the mailbox address from connection metadata; it must equal expected_account before any thread is listed.",
+        "account_identity": "The Gmail connector has no profile call. Establish the mailbox address from connector metadata in the first search_threads result: the authuser parameter of each viewUrl names the signed-in account. It must equal expected_account before any subject or snippet is read; list the first page with view THREAD_VIEW_IDS_ONLY or METADATA_ONLY for this check.",
         "read_state": "search_threads only lists; it never changes read state. Judge from the latest message's sender, subject and snippet and label them as a preview. Open a thread with get_thread (MINIMAL) only when the snippet is cut before the request; get_thread changes nothing either.",
         "item_identity": "The id of the latest message in the thread; a new reply in a known thread is a new item.",
         "pagination": "Follow pageToken with pageSize 50 until the scope is exhausted or the inspection limit is reached; report which of the two ended the listing.",
