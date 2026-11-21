@@ -5,6 +5,7 @@ Contracts stay on `attention-diet-contract/1.3` and memory records on `attention
 ## 0.10.0 · Unreleased
 
 - treg lists can set `select`: `every_post` shows every new post with no decision-model call, `top_share` shows the best-ranked share of what the decision model scored. `decide.py score` takes the `surface` and applies its rule; test runs score per list.
+- `top_share` takes an optional `min_relevance`: entries below it never count, so a quiet day shows fewer than the share.
 
 ## 0.9.0 · Unreleased
 
