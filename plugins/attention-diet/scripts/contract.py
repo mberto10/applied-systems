@@ -37,6 +37,14 @@ def validate_thread(thread):
         require(set(thread["treg_calls"]) == surfaces, label + ": treg_calls must cover every configured surface")
         require(thread.get("content") == "public_posts",
                 label + ": treg collects public posts; mark content as public_posts")
+        for surface, call in thread["treg_calls"].items():
+            text = json.dumps([call.get("body", {}), call.get("query", {})])
+            slots = [m for m in ("{handle}", "{from_handles}") if m in text]
+            require(len(slots) <= 1, label + "/" + surface + ": use {handle} or {from_handles}, not both")
+            require(bool(slots) == bool(call.get("handles")),
+                    label + "/" + surface + ": handles and a {handle} or {from_handles} placeholder go together")
+            require(len(set(h.lower() for h in call.get("handles", []))) == len(call.get("handles", [])),
+                    label + "/" + surface + ": a handle is listed twice")
     for url in [*thread.get("entry_urls", {}).values(), *thread.get("feed_urls", {}).values()]:
         parsed = urlsplit(url)
         require(parsed.scheme == "https" and parsed.hostname and not parsed.username and not parsed.password,

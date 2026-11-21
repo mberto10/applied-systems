@@ -22,3 +22,9 @@ When a source moves between a browser and a connector, keep its account keys and
 Do not disconnect the user's app, change its authorization or clear its authentication as cleanup.
 
 For `more_available: false`, submit structured `exhaustion` of kind `documented_connector_end` with concrete evidence of the observed result and documented end semantics. A stopped or repeated page without that evidence is unknown availability; describe observed no-progress with `retrieval_stalled`.
+
+## Gmail
+
+`examples/gmail-contract.json` is a complete inbox thread for the Gmail connector. List with `search_threads` (`view: THREAD_VIEW_SUMMARY`, `pageSize: 50`) and the scope's query; it only lists, and changes no read state. Judge from the latest message's sender, subject and snippet; open a thread with `get_thread` (`MINIMAL`) only when the snippet is cut before the request. Never call send, reply, forward, label, spam or trash tools, even when the connector offers them.
+
+With `curation`, pass each message to `decide.py score` as `identifier` = message id, `author` = sender, `published` = date, `url` = viewUrl and `text` = `Subject: …` plus the snippet. The thread's own `interests` (reply, someone waiting, deadline) replace the contract's reading interests in the questions, and private messages are not asked the evidence rubric. The message text goes to the configured decision model's provider.

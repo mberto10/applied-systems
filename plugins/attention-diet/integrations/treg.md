@@ -28,6 +28,31 @@ Give each surface one call in `treg_calls`:
 - `query` (GET) or `method: POST` with `body` holds the call's parameters exactly as `treg catalog get` describes them. `treg.x.search.posts` is a POST whose only field is `q`, which takes X search operators such as `since:` and `min_faves:`. `{since_unix}`, `{since_iso}` and `{since_date}` are replaced with the start of the window in every string of `query` or `body`. Use them where the endpoint filters by time; the helper also drops rows older than the window itself, so a date-granular filter is enough.
 - `window_hours` (1 to 168) is how far back a check looks.
 
+### Accounts to watch
+
+`handles` turns one call into one call per account. Two shapes:
+
+```json
+"watched": {
+  "catalog_id": "treg.x.user.posts", "label": "X", "method": "POST",
+  "body": {"username": "{handle}"}, "handles": ["simonw", "karpathy"],
+  "skip_replies": true, "window_hours": 24
+},
+"following": {
+  "catalog_id": "treg.x.search.posts", "label": "X", "method": "POST",
+  "body": {"q": "{from_handles} since:{since_date} -is:retweet"},
+  "handles": ["…"], "group_size": 10, "window_hours": 24
+}
+```
+
+- `{handle}` makes one call per account (about $0.0005 to $0.001 each). Every account is checked, however quiet, so use it for the accounts that must not be missed.
+- `{from_handles}` makes one search per group of `group_size` accounts (default 10, at most 20), filled as `(from:a OR from:b …)`. It is cheaper, but a search returns one page, so a busy account can crowd quiet ones out of it. Use it for a long list such as everyone you follow.
+- `skip_replies` drops posts that start with `@`.
+- Entries are interleaved across calls, so the batch limit never cuts every post of a later account. A failed call is reported in `failed_calls` and the others continue.
+- A handle listed in two surfaces of the same thread is called twice; keep the lists apart.
+
+`scripts/import_following.py --handle YOU --id CONTRACT --thread T --surface following` reads the accounts you follow through `tikhub.x.twitter-web-fetch-user-followings` ($0.001 per page) and prepares a contract revision that sets the surface's handles, leaving out accounts another surface already watches. It installs nothing: look at the printed changes, then run `contract.py apply --proposal ID`. Re-run it to pick up new follows.
+
 Mark the thread `content: public_posts`; validation requires it. Use `service: treg` so all treg threads share one time allowance, or one service per platform if each should have its own. Set `collection.<surface>` to `{"mode": "sample", "max_items": N}`: a search returns one page, so a treg surface is a sample, never a full scan. The procedure is the same for every treg thread:
 
 - `account_identity`: "Public search through treg; no platform sign-in. Use the account key treg:public."

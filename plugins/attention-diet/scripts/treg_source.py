@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Collect public posts through treg (treg.to), one catalog call per surface, bounded before any text leaves.
+"""Collect public posts through treg (treg.to), bounded before any text leaves.
+
+A surface makes one catalog call, or with `handles` one call per handle (`{handle}`) or per group of
+handles (`{from_handles}`, an X search clause such as `(from:a OR from:b)`).
 
 The catalog id and query come from the contract, never from the caller, so this helper cannot call a
 tool the contract did not name. treg relays each call to a data vendor and bills the treg account
@@ -44,7 +47,8 @@ FIELDS = {
     'views': 'view_count viewCount views play_count statistics.play_count',
 }
 WRAPPERS = ('aweme_info', 'data', 'legacy', 'tweet', 'post')  # vendors that wrap each row once more
-PLACEHOLDER = re.compile(r'\{(since_unix|since_iso|since_date)\}')
+PLACEHOLDER = re.compile(r'\{(since_unix|since_iso|since_date|handle|from_handles)\}')
+DEFAULT_GROUP = 10
 
 
 def _get(row, path):
@@ -131,7 +135,7 @@ def _post_url(url):
     return _https(url.rstrip('/')) if isinstance(url, str) else None
 
 
-def entry(row, source_label, catalog_id):
+def entry(row, source_label, catalog_id, default_author=None):
     """One normalized entry, or None when the row has neither a post link nor a vendor id."""
     url = _post_url(first(row, 'url'))
     raw_id = first(row, 'id')
@@ -141,7 +145,7 @@ def entry(row, source_label, catalog_id):
     text = ' '.join(str(first(row, 'text') or '').split())
     clipped = text[:TEXT_LIMIT].rstrip() + '…' if len(text) > TEXT_LIMIT else text
     author = first(row, 'author')
-    author = author if isinstance(author, str) and author.strip() else None
+    author = author if isinstance(author, str) and author.strip() else default_author  # a timeline names no author
     created = moment(first(row, 'created'))
     sender = ('@' + author.lstrip('@')) if author else source_label
     basis = {'sender': sender, 'text': clipped or identifier}
@@ -170,9 +174,35 @@ def fill(value, values):
     return value
 
 
-def resolve_query(query, window_hours, now):
-    values = window_values(window_hours, now)
+def resolve_query(query, values):
     return {key: str(fill(value, values)) for key, value in query.items()}
+
+
+def handle_mode(spec):
+    """'handle', 'from_handles' or None: which handle placeholder the call uses."""
+    text = json.dumps([spec.get('body', {}), spec.get('query', {})])
+    return next((m for m in ('from_handles', 'handle') if '{' + m + '}' in text), None)
+
+
+def call_values(spec, now):
+    """One placeholder set per call: the window, plus one handle or one group of handles."""
+    values = window_values(spec['window_hours'], now)
+    handles, mode = spec.get('handles') or [], handle_mode(spec)
+    if mode == 'handle':
+        return [dict(values, handle=h) for h in handles]
+    if mode == 'from_handles':
+        size = spec.get('group_size', DEFAULT_GROUP)
+        groups = [handles[i:i + size] for i in range(0, len(handles), size)]
+        return [dict(values, from_handles='(' + ' OR '.join('from:' + h for h in g) + ')') for g in groups]
+    return [values]
+
+
+def interleave(groups):
+    """Round-robin across calls, so the batch limit never cuts every post of a later handle."""
+    out = []
+    for i in range(max((len(g) for g in groups), default=0)):
+        out += [g[i] for g in groups if i < len(g)]
+    return out
 
 
 def treg_binary():
@@ -211,39 +241,57 @@ def fetch(contract, thread_id, surface, max_items, seen=(), runner=None, now=Non
     require(type(max_items) is int and max_items >= 0, 'max_items must be a nonnegative integer, the window limit')
     spec = thread['treg_calls'][surface]
     now = time.time() if now is None else now
-    call = {'catalog_id': spec['catalog_id'], 'method': spec.get('method', 'GET'),
-            'body': fill(spec.get('body', {}), window_values(spec['window_hours'], now)),
-            'query': resolve_query(spec.get('query', {}), spec['window_hours'], now)}
-    answer = (runner or run_treg)(call_argv(treg_binary() if runner is None else 'treg', call))
-    payload = answer.get('result', answer) if isinstance(answer, dict) else answer
-    charged = (answer.get('_treg') or {}).get('charged_micro') if isinstance(answer, dict) else None
+    binary = treg_binary() if runner is None else 'treg'
     label = spec.get('label') or thread['service']
-    entries, identified, unidentified, outside, undated = [], 0, 0, 0, 0
+    skip_replies = spec.get('skip_replies', False)
+    identified, unidentified, outside, undated, replies, charged = 0, 0, 0, 0, 0, None
     keys = set(identity.count_key(i) for i in identity.distinct_identifiers(list(seen)))
     cutoff = now - spec['window_hours'] * 3600
-    for row in rows(payload):
-        item = entry(row, label, spec['catalog_id'])
-        if item is None:
-            unidentified += 1  # counted, never given a made-up identity
+    per_call, made, failed = [], [], []
+    for values in call_values(spec, now):
+        call = {'catalog_id': spec['catalog_id'], 'method': spec.get('method', 'GET'),
+                'body': fill(spec.get('body', {}), values), 'query': resolve_query(spec.get('query', {}), values)}
+        made.append(call['query'] or call['body'])
+        try:
+            answer = (runner or run_treg)(call_argv(binary, call))
+        except (ValueError, subprocess.TimeoutExpired) as error:
+            failed.append({'call': made[-1], 'error': str(error)})
             continue
-        identified += 1
-        if item['published'] and datetime.fromisoformat(item['published']).timestamp() < cutoff:
-            outside += 1
-            continue
-        undated += item['published'] is None
-        key = identity.count_key(item['identifier'])
-        if key not in keys:  # also drops a row the vendor listed twice
-            keys.add(key)
-            entries.append(item)
+        payload = answer.get('result', answer) if isinstance(answer, dict) else answer
+        cost = (answer.get('_treg') or {}).get('charged_micro') if isinstance(answer, dict) else None
+        if isinstance(cost, (int, float)):
+            charged = (charged or 0) + int(cost)
+        found = []
+        for row in rows(payload):
+            item = entry(row, label, spec['catalog_id'], values.get('handle'))
+            if item is None:
+                unidentified += 1  # counted, never given a made-up identity
+                continue
+            identified += 1
+            if item['published'] and datetime.fromisoformat(item['published']).timestamp() < cutoff:
+                outside += 1
+                continue
+            if skip_replies and item['text'].startswith('@'):
+                replies += 1
+                continue
+            undated += item['published'] is None
+            key = identity.count_key(item['identifier'])
+            if key not in keys:  # also drops a row the vendor listed twice
+                keys.add(key)
+                found.append(item)
+        per_call.append(found)
+    require(per_call or not made, 'treg call failed: ' + (failed[0]['error'] if failed else 'no call made'))
+    entries = interleave(per_call)
     batch, rest = entries[:max_items], max(0, len(entries) - max_items)
     return {'account_key': ACCOUNT_KEY, 'thread_id': thread_id, 'surface': surface, 'catalog_id': spec['catalog_id'],
-            'query': call['query'] or call['body'], 'window_hours': spec['window_hours'], 'entries': batch,
+            'query': made[0] if len(made) == 1 else made, 'window_hours': spec['window_hours'], 'entries': batch,
             'response_entries': identified, 'remaining_in_response': rest, 'outside_window': outside,
-            'undated_entries': undated, 'unidentified_entries': unidentified,
-            'charged_micro': int(charged) if isinstance(charged, (int, float)) else None,
+            'undated_entries': undated, 'unidentified_entries': unidentified, 'replies_skipped': replies,
+            'failed_calls': failed, 'charged_micro': charged,
             # One search call returns one page; whether the service holds more is not known.
             'more_available': True if rest else None,
-            'evidence': (f'One {spec["catalog_id"]} call for the last {spec["window_hours"]} hours returned '
+            'evidence': (f'{len(made)} {spec["catalog_id"]} call(s) for the last {spec["window_hours"]} hours '
+                         f'({len(failed)} failed) returned '
                          f'{identified} identified rows; {outside} were older than the window and '
                          f'{rest} unseen remain after this batch. Further pages were not requested.'),
             'exhaustion': None}

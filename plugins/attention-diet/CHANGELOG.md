@@ -2,6 +2,13 @@
 
 Contracts stay on `attention-diet-contract/1.3` and memory records on `attention-summary/1.0` throughout; no migration is needed. 0.7 adds an optional access type, so a contract that uses `feed` needs 0.7 or later, and one that uses `treg` or `curation` needs 0.8 or later.
 
+## 0.9.0 · Unreleased
+
+- treg surfaces can watch accounts: `handles` with `{handle}` makes one call per account, and with `{from_handles}` one X search per group of accounts. `skip_replies` drops replies; entries are interleaved across calls and a failed call no longer stops the others.
+- `scripts/import_following.py` prepares a contract revision that sets a surface's handles to the accounts you follow on X.
+- A thread may set its own `interests`, which replace the contract's in the decision model's questions. The evidence rubric is asked only of `public_posts` threads.
+- New example, `examples/gmail-contract.json`: Gmail through the connector, keeping what needs a reply, someone waiting or a deadline, curated by Jev. The connector guide gains a Gmail section.
+
 ## 0.8.0 · Unreleased
 
 **Views and test runs**
