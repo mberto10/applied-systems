@@ -124,6 +124,37 @@ class ImportTests(unittest.TestCase):
         contract_api.validate(contract_api.apply_patch(contract, patch))
 
 
+class ListRuleTests(unittest.TestCase):
+    def contract(self, select):
+        contract = example()
+        contract['coverage_threads'][0]['treg_calls']['agent_posts']['select'] = select
+        return contract_api.validate(contract)
+
+    def test_every_post_includes_all_without_calling_the_model(self):
+        def boom(argv):
+            raise AssertionError('no model call expected')
+        got = decide.score(self.contract({'mode': 'every_post'}), 'x-agents', [{'identifier': 'a'}, {'identifier': 'b'}],
+                           {'treg': boom}, 'agent_posts')
+        self.assertEqual([d['decision'] for d in got['decisions']], ['include', 'include'])
+
+    def test_top_share_keeps_the_best_ranked_share_and_respects_exclusions(self):
+        scores = {'a': 0.9, 'b': 0.4, 'c': 0.2, 'd': 0.95, 'e': 0.1}
+
+        def treg(argv):
+            body = json.loads(argv[argv.index('--data') + 1])
+            text = body['state']['item']['text']
+            answers = {q: {'type': 'noul', 'noul': scores[text] if q.startswith('i') else (0.9 if text == 'd' else 0.0)}
+                       for q in body['questions'] if q != 'ev'}
+            answers['ev'] = {'type': 'score', 'score': 1.0}
+            return {'result': {'model': 'typesafe/jev-1.13-x', 'answers': answers}}
+
+        entries = [{'identifier': k, 'text': k} for k in scores]
+        got = decide.score(self.contract({'mode': 'top_share', 'share': 0.4}), 'x-agents', entries, {'treg': treg}, 'agent_posts')
+        kept = [d['identifier'] for d in got['decisions'] if d['decision'] == 'include']
+        self.assertEqual(kept, ['a', 'b'])  # d is excluded; 40% of the four judged is two
+        self.assertIn('top 40%', got['decisions'][0]['reason'])
+
+
 class InboxQuestionTests(unittest.TestCase):
     def test_a_thread_asks_its_own_questions_and_private_mail_skips_the_evidence_rubric(self):
         contract = json.loads((ROOT / 'examples/gmail-contract.json').read_text())

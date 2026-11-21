@@ -36,7 +36,7 @@ Get one bounded allowance with `runtime.py window --run RUN --input -`:
 
 Choose the batch size within contract sublimits. The returned ticket, limit, seen identifiers and deadline govern reading. Use documented browser observations bounded before reading card text. When a page can exceed the remaining allowance, use the [bounded extraction helper](references/browser-extraction.md) or an equivalent bounded read. Never read every card and then slice the result. Cards merely rendered but left unread do not count as inspected; content exposed by a tool response does. A batch may span pages within that same allowance. Keep seen identifiers locally, skip repeats, and checkpoint before changing surfaces or exceeding the allowance.
 
-Judge relevance before transferring text. When the plan lists the `decide` helper, the contract's decision model judges each batch first; follow the [decision-model guide](../../integrations/decision-models.md). Submit `runtime.py capture-window --run RUN --input -`:
+Judge relevance before transferring text. When the plan lists the `decide` helper, the contract's decision model judges each batch first, one surface at a time (pass its `surface`, so a list's own `select` rule applies); follow the [decision-model guide](../../integrations/decision-models.md). Submit `runtime.py capture-window --run RUN --input -`:
 
 ```json
 {"ticket":"returned-ticket","cards":[

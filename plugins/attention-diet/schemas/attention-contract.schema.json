@@ -533,6 +533,41 @@
                 "skip_replies": {
                   "type": "boolean",
                   "description": "Drop posts that start with @, i.e. replies."
+                },
+                "select": {
+                  "description": "How this list is chosen. every_post: every new post, no decision-model call. top_share: the decision model ranks the list and the best share is shown. Without select, the contract curation bar decides.",
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "mode"
+                      ],
+                      "properties": {
+                        "mode": {
+                          "const": "every_post"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "mode",
+                        "share"
+                      ],
+                      "properties": {
+                        "mode": {
+                          "const": "top_share"
+                        },
+                        "share": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 1
+                        }
+                      }
+                    }
+                  ]
                 }
               }
             }

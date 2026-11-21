@@ -2,6 +2,10 @@
 
 Contracts stay on `attention-diet-contract/1.3` and memory records on `attention-summary/1.0` throughout; no migration is needed. 0.7 adds an optional access type, so a contract that uses `feed` needs 0.7 or later, and one that uses `treg` or `curation` needs 0.8 or later.
 
+## 0.10.0 · Unreleased
+
+- treg lists can set `select`: `every_post` shows every new post with no decision-model call, `top_share` shows the best-ranked share of what the decision model scored. `decide.py score` takes the `surface` and applies its rule; test runs score per list.
+
 ## 0.9.0 · Unreleased
 
 - treg surfaces can watch accounts: `handles` with `{handle}` makes one call per account, and with `{from_handles}` one X search per group of accounts. `skip_replies` drops replies; entries are interleaved across calls and a failed call no longer stops the others.
