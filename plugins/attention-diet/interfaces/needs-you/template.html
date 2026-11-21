@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+<title>$title</title>
+<style>
+:root{--bg:#FAFAF7;--ink:#0A0A0A;--muted:#55554F;--line:#DCDCD5;--chip:#FFFFFF;--accent:#1F38E0;--on-accent:#FFFFFF;
+--serif:"Iowan Old Style","Charter","Source Serif Pro",Georgia,serif;--sans:"Avenir Next","Gill Sans","Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#101012;--ink:#F2F1EC;--muted:#A3A39A;--line:#2C2C30;--chip:#18181B;--accent:#7D8CFF;--on-accent:#0A0A12}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+main{max-width:560px;margin:0 auto;padding:32px 20px 56px}
+header{border-bottom:2px solid var(--ink);padding-bottom:16px}
+.meta{margin:0;font-size:13px;color:var(--muted)}
+h1{margin:6px 0 4px;font:italic 400 40px/1.05 var(--serif);letter-spacing:-.01em}
+.overview{margin:0;font-size:14px;color:var(--muted)}
+.overview:empty{display:none}
+.toggle{position:absolute;opacity:0;pointer-events:none}
+.why-toggle{float:right;margin-top:16px;font-size:13px;color:var(--muted);cursor:pointer;border-bottom:1px dotted var(--muted)}
+.why{display:none}
+#why:checked~.list .why{display:block}
+#why:checked+.why-toggle{color:var(--accent);border-color:var(--accent)}
+input[type=radio]{position:absolute;opacity:0;pointer-events:none}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:16px 0;border-bottom:1px solid var(--line)}
+.chips label{min-height:36px;display:inline-flex;align-items:center;gap:6px;padding:0 14px;border:1px solid var(--line);border-radius:99px;background:var(--chip);font-size:14px;cursor:pointer}
+.chips:empty{display:none}
+input[type=radio]:focus-visible+input+.chips label,.chips label:hover{border-color:var(--accent)}
+article{padding:20px 0;border-bottom:1px solid var(--line);animation:in .35s ease both}
+@keyframes in{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+.src{margin:0 0 6px;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.title{display:block;font:400 21px/1.3 var(--serif);color:var(--ink);text-decoration:none}
+a.title:hover{text-decoration:underline;text-decoration-color:var(--accent)}
+a:focus-visible,label:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.sum{margin:6px 0 0;font-size:15px;color:var(--muted)}
+.why{margin:6px 0 0;font-size:13px;color:var(--accent)}
+.caveat{margin:6px 0 0;font-size:13px;color:var(--muted)}
+.caveat::before{content:"Note: ";font-weight:600}
+.empty{font:italic 22px/1.4 var(--serif);color:var(--muted);padding:32px 0}
+.held{margin-top:20px}
+.held summary{display:inline-flex;min-height:44px;align-items:center;padding:0 18px;border:1px solid var(--line);border-radius:99px;cursor:pointer;list-style:none;color:var(--muted)}
+.held ul{list-style:none;padding:0;margin:14px 0 0}
+.held li{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dotted var(--line);font-size:14px}
+footer{margin-top:32px;font-size:13px;color:var(--muted)}
+footer p{margin:.4em 0}
+.diag summary{cursor:pointer;list-style:none;display:inline-block;border-bottom:1px dotted var(--muted)}
+.diag summary::-webkit-details-marker{display:none}
+.diag[open] summary{margin-bottom:6px}
+</style></head>
+<body><main>
+<header><p class="meta">$meta</p><h1>$title</h1><p class="overview">$overview</p></header>
+$content
+<footer>$notices</footer>
+</main></body></html>

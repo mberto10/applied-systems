@@ -1,10 +1,46 @@
 # Changelog
 
-Contracts stay on `attention-diet-contract/1.3` and memory records on `attention-summary/1.0` throughout; no migration is needed.
+Contracts stay on `attention-diet-contract/1.3` and memory records on `attention-summary/1.0` throughout; no migration is needed. 0.7 adds an optional access type, so a contract that uses `feed` needs 0.7 or later, and one that uses `treg` or `curation` needs 0.8 or later.
 
-## Unreleased
+## 0.9.0 · Unreleased
 
-Documentation only; no change to skills, helpers or schemas.
+- treg surfaces can watch accounts: `handles` with `{handle}` makes one call per account, and with `{from_handles}` one X search per group of accounts. `skip_replies` drops replies; entries are interleaved across calls and a failed call no longer stops the others.
+- `scripts/import_following.py` prepares a contract revision that sets a surface's handles to the accounts you follow on X.
+- A thread may set its own `interests`, which replace the contract's in the decision model's questions. The evidence rubric is asked only of `public_posts` threads.
+- The short list and the front page show only the run's date and time above the title. Coverage, costs and helper remarks fold behind one Details control; unavailable sources and memory warnings stay visible. An empty list shows no overview and no Reasons toggle.
+- New example, `examples/gmail-contract.json`: Gmail through the connector, keeping what needs a reply, someone waiting or a deadline, curated by Jev. The connector guide gains a Gmail section.
+
+## 0.8.0 · Unreleased
+
+**Views and test runs**
+- Two new interfaces: `needs_you_html`, a short list of what passed with filters by section and source that work without scripts, and `front_page_html`, an edition with a lead story, second stories and rows for videos, posts and articles. Both are offline pages under the same Content-Security-Policy as the other HTML views; `scripts/views.py` builds their bodies from the selection data.
+- `scripts/test_run.py` tries a contract while it is being written: it reads its feed and treg surfaces, scores them with the contract's decision model and writes `test-run.json` and an HTML preview in the contract's view. Nothing is remembered; browser and connector sources are listed as skipped.
+
+Collection and curation become separate steps: a helper collects entries in one shape, a decision model scores them against the contract, and code decides.
+
+**treg**
+- New `treg` access type: each surface names one [treg](https://treg.to) catalog call in `treg_calls` (exact catalog id, query, `window_hours`), for public posts on X, Reddit, TikTok, YouTube, Hacker News and more, without a browser or platform sign-in.
+- `scripts/treg_source.py fetch` runs only the contract's catalog ids through the signed-in `treg` CLI, finds the rows in any vendor's answer, drops rows outside the window, already seen or listed twice, and returns entries with a fixed-length basis. Engagement counts stay outside the basis, so a changed like count is not a new post. Each call's charge is returned.
+- treg threads must be `public_posts`; a search reads one page, so a treg surface is a sample.
+- New example, `examples/treg-contract.json`: X posts about building with agents, curated by Jev.
+
+**Decision models**
+- New optional `curation` section. `scripts/decide.py score` asks one question per interest, one per exclusion and one evidence rubric (echo, claim, first-hand) about each entry, and decides include, drop or undecided in code from `include_at`, `exclude_at` and `min_evidence`.
+- Providers: `jev` (TypeSafe AI through treg), `perplexity` and `openai` (native Decisions APIs), and `claude` (the local CLI, prompted estimates). Keys come from the environment, never the contract.
+- `decide.py questions` shows what the contract asks. Nothing learns from reading or clicks; thresholds change only through tune.
+
+## 0.7.0 · Unreleased
+
+**Feeds**
+- New `feed` access type: a surface reads an RSS 2.0, RSS 1.0 or Atom feed named in `feed_urls`, with no browser, sign-in or host tool. Writers, newsletters, video channels, podcasts, preprint servers and many public institutions publish feeds.
+- `scripts/feed.py fetch` takes the URL from the contract, reads at most 5 MB over plain https, refuses redirects away from https and documents that declare entities, and returns at most the window's number of unseen entries with a fixed-length plain-text basis, so an unchanged entry compares equal across runs.
+- Feed threads must be marked `public_posts`; the run plan routes them to [integrations/feeds.md](integrations/feeds.md) with the account key `feed:public`.
+- New example, `examples/feeds-contract.json`: writers, channels and podcasts you follow.
+
+**Viewing a contract**
+- New `view-contract` skill and `scripts/contract_view.py render`: one offline page showing what counts, what is left out, where the agent looks, when a check stops, surprises, what is remembered, what never happens, and the revision history from the changelog, with the exact contract folded at the end. Read-only.
+
+**Earlier documentation changes**
 
 - README leads with the attention contract, the finite check and your own view; examples are inbox newsletters and alerts, GitHub releases and selected accounts on an open network.
 - The terms caution moves up: most platforms built around a feed prohibit automated access, so connectors, APIs and email alerts come first.

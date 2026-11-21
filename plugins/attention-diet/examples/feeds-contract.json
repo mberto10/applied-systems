@@ -1,0 +1,131 @@
+{
+  "schema_version": "attention-diet-contract/1.3",
+  "id": "following",
+  "revision": 1,
+  "intent": {
+    "purpose": "Keep up with the writers, channels and podcasts I follow without opening each app's feed.",
+    "success": "A three-minute overview of new posts, videos and episodes that match my interests; nothing if nothing qualifies.",
+    "interests": [
+      {
+        "id": "ai-practice",
+        "focus": "Posts with a concrete method, tool or result for working with AI, not announcements alone."
+      },
+      {
+        "id": "media-business",
+        "focus": "Analysis of how publishers and platforms earn money and reach readers."
+      }
+    ],
+    "excluded": [
+      "Sponsored posts and product promotion.",
+      "Episode or video trailers without new content.",
+      "outbound_account_actions"
+    ]
+  },
+  "coverage_threads": [
+    {
+      "id": "following",
+      "service": "feeds",
+      "content": "public_posts",
+      "access": {
+        "type": "feed",
+        "fallback": "none"
+      },
+      "account_actions": "none",
+      "surfaces": [
+        "writer",
+        "channel",
+        "podcast"
+      ],
+      "excluded_surfaces": [],
+      "feed_urls": {
+        "writer": "https://example.substack.com/feed",
+        "channel": "https://www.youtube.com/feeds/videos.xml?channel_id=CHANNEL_ID_FROM_SETUP",
+        "podcast": "https://example.org/podcast/feed.xml"
+      },
+      "targets": {
+        "writer": {
+          "scope": "Posts in the writer's feed; a Substack publication's feed is its address followed by /feed."
+        },
+        "channel": {
+          "scope": "Videos in the channel's feed; YouTube lists the most recent fifteen."
+        },
+        "podcast": {
+          "scope": "Episodes in the podcast's public feed."
+        }
+      },
+      "procedure": {
+        "account_identity": "Public feed; no sign-in. Use the account key feed:public.",
+        "read_state": "Reading a feed changes nothing on the service.",
+        "item_identity": "The entry's guid or Atom id, else its link, exactly as the feed helper returns it.",
+        "pagination": "A feed lists only its current entries. The helper's exhaustion evidence marks the end of the document.",
+        "retrieval": "feed.py fetch for this surface, within the window limit."
+      },
+      "collection": {
+        "writer": {
+          "mode": "scan"
+        },
+        "channel": {
+          "mode": "scan"
+        },
+        "podcast": {
+          "mode": "scan"
+        }
+      },
+      "selection": {
+        "include": "New posts, videos and episodes that match a listed interest. Give the reason for inclusion.",
+        "exclude": [
+          "Entries that only announce something elsewhere."
+        ],
+        "uncertain_relevance": "Omit weak matches; do not fill the allowance.",
+        "evidence": "Summarize only the feed's own text, label it as a feed summary, and distinguish claims from verified facts."
+      },
+      "on_access_failure": "Report the unavailable feed; do not fall back to a browser or another route."
+    }
+  ],
+  "memory_context": {
+    "provider": "local",
+    "directory": "~/.local/state/attention-diet/following",
+    "purpose": "avoid_repeating_previously_briefed_items",
+    "on_unavailable": "continue_with_notice"
+  },
+  "run_limits": {
+    "elapsed_minutes": 3,
+    "items_per_surface": 30,
+    "service_minutes": {
+      "feeds": 3
+    }
+  },
+  "composition": {
+    "interface": "agent_summary",
+    "delivery": "current_agent_conversation",
+    "template": "./interfaces/agent-summary/template.md",
+    "template_path_base": "plugin_root",
+    "format": "markdown",
+    "sections": [
+      "overview",
+      "updates"
+    ],
+    "target_reading_minutes": 3,
+    "max_items_by_thread": {
+      "following": 6
+    }
+  },
+  "execution": {
+    "mode": "one_off_on_invocation",
+    "schedule_enabled": false,
+    "daily_time": null
+  },
+  "serendipity": {
+    "enabled": true,
+    "max_items": 1,
+    "sources": [
+      "following/writer",
+      "following/channel"
+    ],
+    "share_of_discovery_sample": 0.2,
+    "test": [
+      "Substantive, clearly outside the listed interests, with a concrete reason to deserve attention."
+    ],
+    "avoid_repeating_topics_for_runs": 5
+  }
+}

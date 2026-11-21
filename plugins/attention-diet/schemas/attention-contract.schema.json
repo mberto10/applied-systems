@@ -184,6 +184,40 @@
           "const": "none"
         }
       }
+    },
+    "feedAccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "fallback"
+      ],
+      "description": "An RSS or Atom feed read by the bundled feed helper, without a browser or sign-in.",
+      "properties": {
+        "type": {
+          "const": "feed"
+        },
+        "fallback": {
+          "const": "none"
+        }
+      }
+    },
+    "tregAccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "fallback"
+      ],
+      "description": "Public posts collected through treg (treg.to) catalog calls named in treg_calls, billed to the signed-in treg account.",
+      "properties": {
+        "type": {
+          "const": "treg"
+        },
+        "fallback": {
+          "const": "none"
+        }
+      }
     }
   },
   "properties": {
@@ -273,6 +307,12 @@
               },
               {
                 "$ref": "#/$defs/connectorAccess"
+              },
+              {
+                "$ref": "#/$defs/feedAccess"
+              },
+              {
+                "$ref": "#/$defs/tregAccess"
               }
             ]
           },
@@ -300,6 +340,15 @@
           },
           "entry_urls": {
             "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^https://",
+              "format": "uri"
+            }
+          },
+          "feed_urls": {
+            "type": "object",
+            "description": "One RSS or Atom feed URL per surface, for feed access.",
             "additionalProperties": {
               "type": "string",
               "pattern": "^https://",
@@ -417,6 +466,96 @@
                 }
               }
             }
+          },
+          "treg_calls": {
+            "type": "object",
+            "description": "One treg catalog call per surface, for treg access, or one per handle or handle group when handles are set. Query and body values may use {since_unix}, {since_iso} or {since_date} for the start of the window, and {handle} or {from_handles} with handles.",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "catalog_id",
+                "window_hours"
+              ],
+              "properties": {
+                "catalog_id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9._-]{1,120}$"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "method": {
+                  "enum": [
+                    "GET",
+                    "POST"
+                  ]
+                },
+                "query": {
+                  "type": "object",
+                  "propertyNames": {
+                    "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+                  },
+                  "additionalProperties": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ]
+                  }
+                },
+                "body": {
+                  "type": "object"
+                },
+                "window_hours": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 168
+                },
+                "handles": {
+                  "type": "array",
+                  "description": "Accounts this surface checks: one call per handle with {handle}, or grouped X search clauses with {from_handles}.",
+                  "minItems": 1,
+                  "maxItems": 500,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_]{1,15}$"
+                  }
+                },
+                "group_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20,
+                  "description": "Handles per {from_handles} search; default 10."
+                },
+                "skip_replies": {
+                  "type": "boolean",
+                  "description": "Drop posts that start with @, i.e. replies."
+                }
+              }
+            }
+          },
+          "interests": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "focus"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "#/$defs/text"
+                },
+                "focus": {
+                  "$ref": "#/$defs/text"
+                }
+              }
+            },
+            "description": "Replaces intent.interests in the decision model's questions for this thread, e.g. what in an inbox needs the user. Section names come from these ids."
           }
         },
         "allOf": [
@@ -464,6 +603,52 @@
                 }
               }
             }
+          },
+          {
+            "if": {
+              "properties": {
+                "access": {
+                  "properties": {
+                    "type": {
+                      "const": "feed"
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "feed_urls"
+              ]
+            },
+            "else": {
+              "properties": {
+                "feed_urls": false
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "access": {
+                  "properties": {
+                    "type": {
+                      "const": "treg"
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "treg_calls"
+              ]
+            },
+            "else": {
+              "properties": {
+                "treg_calls": false
+              }
+            }
           }
         ]
       }
@@ -509,7 +694,9 @@
           "enum": [
             "agent_summary",
             "briefing_html",
-            "discovery_html"
+            "discovery_html",
+            "needs_you_html",
+            "front_page_html"
           ]
         },
         "delivery": {
@@ -670,6 +857,53 @@
           }
         }
       ]
+    },
+    "curation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_model"
+      ],
+      "description": "Optional. A decision model scores each collected entry against this contract; thresholds decide in code.",
+      "properties": {
+        "decision_model": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "provider"
+          ],
+          "properties": {
+            "provider": {
+              "enum": [
+                "jev",
+                "perplexity",
+                "openai",
+                "claude"
+              ]
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          }
+        },
+        "include_at": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "exclude_at": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "min_evidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        }
+      }
     }
   }
 }

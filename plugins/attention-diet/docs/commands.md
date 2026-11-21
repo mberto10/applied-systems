@@ -13,6 +13,7 @@ AD_PYTHON="$HOME/.cache/attention-diet-venv/bin/python"
 "$AD_PYTHON" scripts/runtime.py capture --run RUN --input -
 "$AD_PYTHON" scripts/runtime.py finalize --run RUN --input -
 "$AD_PYTHON" scripts/runtime.py finish --run RUN [--out ABSOLUTE.html]
+"$AD_PYTHON" scripts/feed.py fetch --contract FILE --input -           # feed threads: thread_id, surface, max_items, seen_identifiers
 
 # Supermemory only
 "$AD_PYTHON" scripts/runtime.py import-history --run RUN --input -
@@ -30,6 +31,7 @@ AD_PYTHON="$HOME/.cache/attention-diet-venv/bin/python"
 "$AD_PYTHON" scripts/contract.py install --contract FILE [--default]
 "$AD_PYTHON" scripts/contract.py export --id ID --out FILE
 "$AD_PYTHON" scripts/contract.py remove --id ID
+"$AD_PYTHON" scripts/contract_view.py render [--id ID | --contract FILE] --out ABSOLUTE.html
 ```
 
 Installation keeps replaced revisions and, for a hand-edited file, adds a changelog line. Removal archives the contract and leaves its memory. `export` writes a template-shaped copy without account lists, identities or personal paths, for sharing. `run_budget.py`, `surface_coverage.py`, `briefing.py` and `briefing_memory.py` expose the runtime's parts for diagnostics only; the skills call `runtime.py` and `contract.py`, and `briefing.py render` for view previews.

@@ -30,10 +30,25 @@ def validate_thread(thread):
             label + ": a surface is both included and excluded")
     target_field = "entry_urls" if thread["access"]["type"] == "browser" else "targets"
     require(set(thread[target_field]) == surfaces, label + ": " + target_field + " must cover every configured surface")
-    for url in thread.get("entry_urls", {}).values():
+    if thread["access"]["type"] == "feed":
+        require(set(thread["feed_urls"]) == surfaces, label + ": feed_urls must cover every configured surface")
+        require(thread.get("content") == "public_posts", label + ": a feed is public; mark content as public_posts")
+    if thread["access"]["type"] == "treg":
+        require(set(thread["treg_calls"]) == surfaces, label + ": treg_calls must cover every configured surface")
+        require(thread.get("content") == "public_posts",
+                label + ": treg collects public posts; mark content as public_posts")
+        for surface, call in thread["treg_calls"].items():
+            text = json.dumps([call.get("body", {}), call.get("query", {})])
+            slots = [m for m in ("{handle}", "{from_handles}") if m in text]
+            require(len(slots) <= 1, label + "/" + surface + ": use {handle} or {from_handles}, not both")
+            require(bool(slots) == bool(call.get("handles")),
+                    label + "/" + surface + ": handles and a {handle} or {from_handles} placeholder go together")
+            require(len(set(h.lower() for h in call.get("handles", []))) == len(call.get("handles", [])),
+                    label + "/" + surface + ": a handle is listed twice")
+    for url in [*thread.get("entry_urls", {}).values(), *thread.get("feed_urls", {}).values()]:
         parsed = urlsplit(url)
         require(parsed.scheme == "https" and parsed.hostname and not parsed.username and not parsed.password,
-                label + ": entry URLs must be plain https")
+                label + ": entry and feed URLs must be plain https")
     require(set(thread.get("collection", {})) <= surfaces, label + ": collection must name configured surfaces")
 
 
@@ -61,7 +76,8 @@ def validate(contract):
     composition = contract["composition"]
     require(set(composition.get("max_items_by_thread", {})) <= {t["id"] for t in threads},
             "max_items_by_thread must name configured thread ids")
-    formats = {"agent_summary": "markdown", "briefing_html": "html", "discovery_html": "html"}
+    formats = {"agent_summary": "markdown", "briefing_html": "html", "discovery_html": "html",
+               "needs_you_html": "html", "front_page_html": "html"}
     require(composition.get("format", formats[composition["interface"]]) == formats[composition["interface"]],
             "Output format does not match interface")
     return contract
