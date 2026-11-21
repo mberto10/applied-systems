@@ -79,8 +79,14 @@ class HandleTests(unittest.TestCase):
         queries = []
         treg.fetch(contract_api.validate(contract), 'x-agents', 'agent_posts', 5, now=NOW,
                    runner=lambda argv: queries.append(json.loads(argv[argv.index('--data') + 1])['q']) or {'result': []})
-        self.assertEqual(queries, ['(from:a OR from:b) since:2027-01-14 -is:retweet',
-                                   '(from:c) since:2027-01-14 -is:retweet'])
+        first, second = '(from:a OR from:b) since:2027-01-14 -is:retweet', '(from:c) since:2027-01-14 -is:retweet'
+        self.assertEqual(queries, [first, first, second, second])  # an empty answer is asked once more
+
+    def test_an_unusable_answer_is_retried_once(self):
+        answers = iter([{'result': {'output': [{'text': 'no id, no link'}]}, '_treg': {'charged_micro': 300}},
+                        {'result': {'output': [post('busy', 1)]}, '_treg': {'charged_micro': 500}}])
+        got = treg.fetch(self.watched(handles=['busy']), 'x-agents', 'watched', 10, runner=lambda argv: next(answers), now=NOW)
+        self.assertEqual((len(got['entries']), got['retried_calls'], got['charged_micro']), (1, 1, 800))
 
     def test_handles_and_placeholders_go_together(self):
         contract = example()

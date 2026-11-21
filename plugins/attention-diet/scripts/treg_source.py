@@ -247,20 +247,28 @@ def fetch(contract, thread_id, surface, max_items, seen=(), runner=None, now=Non
     identified, unidentified, outside, undated, replies, charged = 0, 0, 0, 0, 0, None
     keys = set(identity.count_key(i) for i in identity.distinct_identifiers(list(seen)))
     cutoff = now - spec['window_hours'] * 3600
-    per_call, made, failed = [], [], []
+    per_call, made, failed, retried = [], [], [], 0
     for values in call_values(spec, now):
         call = {'catalog_id': spec['catalog_id'], 'method': spec.get('method', 'GET'),
                 'body': fill(spec.get('body', {}), values), 'query': resolve_query(spec.get('query', {}), values)}
         made.append(call['query'] or call['body'])
-        try:
-            answer = (runner or run_treg)(call_argv(binary, call))
-        except (ValueError, subprocess.TimeoutExpired) as error:
+        payload, error = None, None
+        for attempt in range(2):  # a routed provider sometimes answers with nothing usable; ask once more
+            try:
+                answer = (runner or run_treg)(call_argv(binary, call))
+            except (ValueError, subprocess.TimeoutExpired) as caught:
+                error = caught
+                continue
+            cost = (answer.get('_treg') or {}).get('charged_micro') if isinstance(answer, dict) else None
+            if isinstance(cost, (int, float)):
+                charged = (charged or 0) + int(cost)
+            payload, error = (answer.get('result', answer) if isinstance(answer, dict) else answer), None
+            if any(entry(row, label, spec['catalog_id']) for row in rows(payload)):
+                break
+        retried += attempt
+        if payload is None:
             failed.append({'call': made[-1], 'error': str(error)})
             continue
-        payload = answer.get('result', answer) if isinstance(answer, dict) else answer
-        cost = (answer.get('_treg') or {}).get('charged_micro') if isinstance(answer, dict) else None
-        if isinstance(cost, (int, float)):
-            charged = (charged or 0) + int(cost)
         found = []
         for row in rows(payload):
             item = entry(row, label, spec['catalog_id'], values.get('handle'))
@@ -287,7 +295,7 @@ def fetch(contract, thread_id, surface, max_items, seen=(), runner=None, now=Non
             'query': made[0] if len(made) == 1 else made, 'window_hours': spec['window_hours'], 'entries': batch,
             'response_entries': identified, 'remaining_in_response': rest, 'outside_window': outside,
             'undated_entries': undated, 'unidentified_entries': unidentified, 'replies_skipped': replies,
-            'failed_calls': failed, 'charged_micro': charged,
+            'failed_calls': failed, 'retried_calls': retried, 'charged_micro': charged,
             # One search call returns one page; whether the service holds more is not known.
             'more_available': True if rest else None,
             'evidence': (f'{len(made)} {spec["catalog_id"]} call(s) for the last {spec["window_hours"]} hours '

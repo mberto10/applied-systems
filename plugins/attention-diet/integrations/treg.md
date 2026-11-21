@@ -48,7 +48,7 @@ Give each surface one call in `treg_calls`:
 - `{handle}` makes one call per account (about $0.0005 to $0.001 each). Every account is checked, however quiet, so use it for the accounts that must not be missed.
 - `{from_handles}` makes one search per group of `group_size` accounts (default 10, at most 20), filled as `(from:a OR from:b …)`. It is cheaper, but a search returns one page, so a busy account can crowd quiet ones out of it. Use it for a long list such as everyone you follow.
 - `skip_replies` drops posts that start with `@`.
-- Entries are interleaved across calls, so the batch limit never cuts every post of a later account. A failed call is reported in `failed_calls` and the others continue.
+- Entries are interleaved across calls, so the batch limit never cuts every post of a later account. A call that fails or returns no identifiable post is asked once more (counted in `retried_calls`, both attempts billed); a call that fails twice is reported in `failed_calls` and the others continue.
 - A handle listed in two surfaces of the same thread is called twice; keep the lists apart.
 
 ### How each list is chosen
