@@ -96,14 +96,14 @@ class HandleTests(unittest.TestCase):
 
 class ImportTests(unittest.TestCase):
     def test_pages_through_the_following_list_until_the_cursor_ends(self):
-        pages = {None: (['a', 'b'], 'c1'), 'c1': (['b', 'c'], '0')}
+        pages = {None: (['a', 'b'], 'c1'), 'c1': (['b', 'c'], None)}
         seen = []
 
         def runner(argv):
-            cursor = next((a.split('=', 1)[1] for a in argv if a.startswith('cursor=')), None)
+            cursor = json.loads(argv[argv.index('--data') + 1]).get('cursor')
             seen.append(cursor)
             names, nxt = pages[cursor]
-            return {'result': {'data': {'following': [{'screen_name': n} for n in names], 'next_cursor': nxt}},
+            return {'result': {'output': {'data': {'items': [{'username': n} for n in names], 'nextCursor': nxt}}},
                     '_treg': {'charged_micro': 1000}}
 
         self.assertEqual(importer.following('me', runner=runner), (['a', 'b', 'c'], 2000))

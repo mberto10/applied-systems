@@ -51,7 +51,7 @@ Give each surface one call in `treg_calls`:
 - Entries are interleaved across calls, so the batch limit never cuts every post of a later account. A failed call is reported in `failed_calls` and the others continue.
 - A handle listed in two surfaces of the same thread is called twice; keep the lists apart.
 
-`scripts/import_following.py --handle YOU --id CONTRACT --thread T --surface following` reads the accounts you follow through `tikhub.x.twitter-web-fetch-user-followings` ($0.001 per page) and prepares a contract revision that sets the surface's handles, leaving out accounts another surface already watches. It installs nothing: look at the printed changes, then run `contract.py apply --proposal ID`. Re-run it to pick up new follows.
+`scripts/import_following.py --handle YOU --id CONTRACT --thread T --surface following` reads the accounts you follow through `anyapi.twitter.following` (about 50 accounts per page, $0.00075 to $0.0036 per page) and prepares a contract revision that sets the surface's handles, leaving out accounts another surface already watches. It installs nothing: look at the printed changes, then run `contract.py apply --proposal ID`. Re-run it to pick up new follows.
 
 Mark the thread `content: public_posts`; validation requires it. Use `service: treg` so all treg threads share one time allowance, or one service per platform if each should have its own. Set `collection.<surface>` to `{"mode": "sample", "max_items": N}`: a search returns one page, so a treg surface is a sample, never a full scan. The procedure is the same for every treg thread:
 
