@@ -41,6 +41,9 @@ a:focus-visible,label:focus-visible{outline:3px solid var(--accent);outline-offs
 .held li{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dotted var(--line);font-size:14px}
 footer{margin-top:32px;font-size:13px;color:var(--muted)}
 footer p{margin:.4em 0}
+.diag summary{cursor:pointer;list-style:none;display:inline-block;border-bottom:1px dotted var(--muted)}
+.diag summary::-webkit-details-marker{display:none}
+.diag[open] summary{margin-bottom:6px}
 </style></head>
 <body><main>
 <header><p class="meta">$meta</p><h1>$title</h1><p class="overview">$overview</p></header>

@@ -113,7 +113,7 @@ def render_preview(contract, data):
     return interface, briefing.render_template(contract, interface, {
         'title': escape(data['title']), 'overview': escape(data['overview']), 'meta': escape(data['meta']),
         'layout': 'briefing', 'content': body, 'data': '{}',
-        'notices': ''.join('<p>' + escape(n) + '</p>' for n in data['notices'])},
+        'notices': briefing.notices_html(data['notices'])},
         template_path=briefing.ROOT / briefing.DEFAULT_TEMPLATES[interface])
 
 

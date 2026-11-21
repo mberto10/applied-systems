@@ -3,6 +3,7 @@
 import argparse
 from html import escape
 import hashlib
+from datetime import datetime
 import json
 from pathlib import Path
 import re
@@ -261,6 +262,31 @@ def briefing_notices(contract, record):
     return result
 
 
+# Notices the reader must see on the page; everything else (coverage, costs, helper remarks) is a diagnostic.
+ALERT = re.compile(r'was unavailable|was not checked|read state is unknown|memory|Earlier briefings|'
+                   r'reliably compared|sign in|signed in|account', re.I)
+
+
+def notices_html(notices):
+    """Alerts as paragraphs; diagnostics folded behind one Details control."""
+    alerts = [n for n in notices if ALERT.search(n)]
+    details = [n for n in notices if n not in alerts]
+    html = ''.join('<p>' + escape(n) + '</p>' for n in alerts)
+    if details:
+        html += ('<details class="diag"><summary>Details</summary>'
+                 + ''.join('<p>' + escape(n) + '</p>' for n in details) + '</details>')
+    return html
+
+
+def edition_time(created_at):
+    """The run's local date and time, the only line above a short list or front page."""
+    try:
+        moment = datetime.fromisoformat(created_at).astimezone()
+    except (TypeError, ValueError):
+        return ''
+    return moment.strftime('%A %d %B · %H:%M')
+
+
 def md(value):
     # Source text is data, never Markdown/HTML supplied by a page.
     text = escape(' '.join(value.split()), quote=False)
@@ -370,7 +396,11 @@ def render(contract, record, interface=None, contract_dir=None, *, template_path
                               'within_allowance_count', 'unreadable_count', 'has_unreadable_content') if k in row}}
                          for row in record['coverage']]}
     if interface in {'needs_you_html', 'front_page_html'}:
-        sections = [views.needs_you(data) if interface == 'needs_you_html' else views.front_page(data)]
+        body = views.needs_you(data) if interface == 'needs_you_html' else views.front_page(data)
+        return render_template(contract, interface, {
+            'title': escape(record['title']), 'overview': escape(record['overview']) if count else '',
+            'meta': escape(edition_time(record['created_at'])), 'layout': 'briefing', 'content': body,
+            'notices': notices_html(notices), 'data': data_island(data)}, contract_dir, template_path)
     return render_template(contract, interface, {
         'title': escape(record['title']), 'overview': escape(record['overview']), 'meta': escape(meta),
         'layout': 'discovery' if interface == 'discovery_html' else 'briefing', 'content': ''.join(sections),
