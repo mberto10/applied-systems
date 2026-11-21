@@ -88,7 +88,7 @@ def needs_you(data):
                      f'{link(e, e["title"], "title")}'
                      f'{summary(e)}<p class="why">{escape(e["why"])}</p>{caveats}</article>')
     empty = '<p class="empty">Nothing new worth your time.</p>' if not entries else ''
-    return (f'<style>{rules}</style>{REASONS}{radios}<div class="chips" role="group" aria-label="Filter">{chips}</div>'
+    return (f'<style>{rules}</style>{REASONS if entries else ""}{radios}<div class="chips" role="group" aria-label="Filter">{chips}</div>'
             f'<div class="list">{"".join(cards)}{empty}</div>{held_back(data)}')
 
 

@@ -67,6 +67,19 @@ class ViewTests(unittest.TestCase):
             self.assertIn("default-src 'none'", html)
             self.assertNotIn('$content', html)
 
+    def test_diagnostics_fold_behind_details_and_alerts_stay_visible(self):
+        html = briefing.notices_html(['Gmail was unavailable.', 'X — agent posts: 20 posts sampled.', 'treg cost: $0.01.'])
+        self.assertTrue(html.startswith('<p>Gmail was unavailable.</p><details class="diag"><summary>Details</summary>'))
+        self.assertIn('treg cost', html.split('<details')[1])
+        self.assertEqual(briefing.notices_html([]), '')
+
+    def test_saved_selection_shows_only_the_date_above_the_list(self):
+        contract = contract_api.validate(json.loads((ROOT / 'templates/attention-contract.json').read_text()))
+        record = json.loads((ROOT / 'examples/selection.json').read_text())
+        html = briefing.render(contract, record, 'needs_you_html')
+        self.assertNotIn('selected item', html)
+        self.assertNotIn('source area', html)
+
     def test_contract_accepts_the_new_interfaces(self):
         contract = json.loads((ROOT / 'examples/treg-contract.json').read_text())
         contract['composition'].update({'interface': 'front_page_html', 'format': 'html',

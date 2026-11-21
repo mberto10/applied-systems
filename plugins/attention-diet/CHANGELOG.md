@@ -7,6 +7,7 @@ Contracts stay on `attention-diet-contract/1.3` and memory records on `attention
 - treg surfaces can watch accounts: `handles` with `{handle}` makes one call per account, and with `{from_handles}` one X search per group of accounts. `skip_replies` drops replies; entries are interleaved across calls and a failed call no longer stops the others.
 - `scripts/import_following.py` prepares a contract revision that sets a surface's handles to the accounts you follow on X.
 - A thread may set its own `interests`, which replace the contract's in the decision model's questions. The evidence rubric is asked only of `public_posts` threads.
+- The short list and the front page show only the run's date and time above the title. Coverage, costs and helper remarks fold behind one Details control; unavailable sources and memory warnings stay visible. An empty list shows no overview and no Reasons toggle.
 - New example, `examples/gmail-contract.json`: Gmail through the connector, keeping what needs a reply, someone waiting or a deadline, curated by Jev. The connector guide gains a Gmail section.
 
 ## 0.8.0 · Unreleased
