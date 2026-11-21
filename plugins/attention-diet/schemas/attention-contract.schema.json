@@ -564,6 +564,12 @@
                           "type": "number",
                           "exclusiveMinimum": 0,
                           "maximum": 1
+                        },
+                        "min_relevance": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1,
+                          "description": "Entries below this relevance never count, so a quiet day shows fewer than the share."
                         }
                       }
                     }

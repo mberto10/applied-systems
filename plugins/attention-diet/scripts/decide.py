@@ -238,9 +238,10 @@ def list_rule(thread, surface):
     return ((thread.get('treg_calls') or {}).get(surface) or {}).get('select') or {'mode': 'judged'}
 
 
-def top_share(decisions, share):
-    """Keep the best-ranked share of the entries that were judged and not excluded; drop the rest."""
-    ranked = sorted((d for d in decisions if d['decision'] != 'undecided' and not d.get('excluded_by')),
+def top_share(decisions, share, floor=0.0):
+    """Keep the best-ranked share of the entries that were judged, not excluded and at or above the floor; drop the rest."""
+    ranked = sorted((d for d in decisions if d['decision'] != 'undecided' and not d.get('excluded_by')
+                     and (d.get('relevance') or 0) >= floor),
                     key=lambda d: -(d.get('rank') or 0))
     keep = {d['identifier'] for d in ranked[:max(1, math.ceil(share * len(ranked)))]} if ranked else set()
     label = f'top {round(share * 100)}%'
@@ -248,6 +249,8 @@ def top_share(decisions, share):
     for d in decisions:
         if d['decision'] == 'undecided' or d.get('excluded_by'):
             out.append(d)
+        elif (d.get('relevance') or 0) < floor:
+            out.append({**d, 'decision': 'drop', 'reason': f'Weak match: {d["best_interest"]} at {d["relevance"]:.2f}, below the list minimum {floor:g}'})
         elif d['identifier'] in keep:
             out.append({**d, 'decision': 'include', 'reason': f'In the {label} of this list: {d["best_interest"]} ({d["relevance"]:.2f})'})
         else:
@@ -289,7 +292,7 @@ def score(contract, thread_id, entries, transport=None, surface=None):
         charged = sum(int(c) for _, c in results if isinstance(c, (int, float)))
     decisions = [{'identifier': e['identifier'], **judge(a, asked, config)} for e, a in zip(entries, answered)]
     if rule['mode'] == 'top_share':
-        decisions = top_share(decisions, rule['share'])
+        decisions = top_share(decisions, rule['share'], rule.get('min_relevance', 0.0))
     decisions.sort(key=lambda d: (d['decision'] != 'include', -(d.get('rank') or 0)))
     return {'provider': config['provider'], 'model': config['model'], 'thread_id': thread_id, 'surface': surface, 'rule': rule,
             'thresholds': {k: config[k] for k in ('include_at', 'exclude_at', 'min_evidence')},

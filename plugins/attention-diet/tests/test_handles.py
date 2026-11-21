@@ -153,6 +153,10 @@ class ListRuleTests(unittest.TestCase):
         kept = [d['identifier'] for d in got['decisions'] if d['decision'] == 'include']
         self.assertEqual(kept, ['a', 'b'])  # d is excluded; 40% of the four judged is two
         self.assertIn('top 40%', got['decisions'][0]['reason'])
+        floored = decide.score(self.contract({'mode': 'top_share', 'share': 0.4, 'min_relevance': 0.5}), 'x-agents',
+                               entries, {'treg': treg}, 'agent_posts')
+        self.assertEqual([d['identifier'] for d in floored['decisions'] if d['decision'] == 'include'], ['a'])
+        self.assertIn('below the list minimum', next(d for d in floored['decisions'] if d['identifier'] == 'b')['reason'])
 
 
 class InboxQuestionTests(unittest.TestCase):
